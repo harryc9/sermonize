@@ -1,0 +1,122 @@
+---
+description: Guidelines for creating and organizing Cursor rules in this project
+globs: 
+alwaysApply: false
+---
+
+# Cursor Rules Best Practices
+
+## Where Rules Live
+
+- **Project Rules**: Store in `.cursor/rules/` as `.mdc` files (version-controlled)
+- **Nested Rules**: Place in subdirectories (e.g., `backend/.cursor/rules/`) for scoped context
+- **AGENTS.md**: Simple markdown alternative in project root for basic instructions
+- **DO NOT** use `.cursorrules` file (legacy, deprecated)
+
+## Rule Types
+
+Control application via frontmatter metadata:
+
+```md
+---
+description: Brief description for intelligent application
+globs: **/*.ts, **/*.tsx
+alwaysApply: false
+---
+```
+
+| Rule Type | When Applied | Metadata |
+|-----------|--------------|----------|
+| Always Apply | Every chat session | `alwaysApply: true` |
+| Apply Intelligently | When Agent decides it's relevant | `description: "..."` + `alwaysApply: false` |
+| Apply to Specific Files | When file matches pattern | `globs: **/*.ts` |
+| Apply Manually | When @-mentioned | No special metadata needed |
+
+## Best Practices
+
+### Keep Rules Focused
+- **Under 500 lines** per rule
+- Split large rules into multiple, composable rules
+- One concern per rule (e.g., separate auth, styling, testing rules)
+
+### Make Rules Actionable
+- Provide concrete examples or reference files using `@filename.ts`
+- Write rules like clear internal documentation
+- Avoid vague guidance like "write good code"
+- Include code snippets showing the pattern
+
+### Good Example:
+```md
+---
+description: API authentication pattern
+alwaysApply: true
+---
+
+Use `authenticateRequest()` from `@/lib/api-auth` for all API routes:
+
+```typescript
+import { authenticateRequest } from '@/lib/api-auth'
+
+export async function GET(request: NextRequest) {
+  const auth = await authenticateRequest(request)
+  if (!auth.success) return auth.response
+  // ... use auth.userId
+}
+```
+
+❌ Don't manually parse Authorization headers
+```
+
+### Bad Example:
+```md
+Always write secure API endpoints with proper authentication.
+```
+
+## When to Create a Rule
+
+Create rules when you:
+- Repeat the same instructions in multiple chat sessions
+- Have project-specific patterns or conventions
+- Need to encode domain knowledge about the codebase
+- Want to standardize architecture decisions
+- Have team-wide coding standards
+
+## Organizing Rules
+
+```bash
+project/
+  .cursor/rules/              # Project-wide rules
+    api-authentication.mdc
+    styling-conventions.mdc
+  backend/
+    .cursor/rules/            # Backend-specific rules
+      database-patterns.mdc
+  frontend/
+    .cursor/rules/            # Frontend-specific rules
+      component-structure.mdc
+```
+
+## Rule Precedence
+
+When multiple rules could apply:
+1. Team Rules (if on Team plan)
+2. Project Rules
+3. User Rules (global Cursor settings)
+
+More specific rules take precedence over general ones.
+
+## References in Rules
+
+Include files in rule context using `@` syntax:
+
+```md
+Follow this template for new services:
+
+@service-template.ts
+```
+
+## Resources
+
+- [Cursor Rules Documentation](https://cursor.com/docs/context/rules)
+- Community rule collections available online
+- Framework-specific rules from official providers

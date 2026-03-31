@@ -1,0 +1,23 @@
+---
+description: Avoid passing next-safe-action server actions directly as mutationFn references
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+# next-safe-action + useMutation
+
+Never pass `next-safe-action` server actions directly as `mutationFn` in React Query's `useMutation`. Wrap them in an arrow function instead.
+
+**Root cause:** `useMutation` can pass extra arguments (mutation context) beyond the variables. `next-safe-action` v7 interprets extra args as bind args and tries to validate them against `bindArgsSchemas`, which is `undefined` — causing `Cannot read properties of undefined (reading 'safeParseAsync')`.
+
+```typescript
+// ❌ BAD — action receives extra args from useMutation internals
+const mutation = useMutation({
+  mutationFn: updateAssessmentQuestion,
+})
+
+// ✅ GOOD — arrow function ensures only the input arg is forwarded
+const mutation = useMutation({
+  mutationFn: (data: Parameters<typeof updateAssessmentQuestion>[0]) =>
+    updateAssessmentQuestion(data),
+})
+```

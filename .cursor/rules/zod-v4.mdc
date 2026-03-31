@@ -1,0 +1,61 @@
+---
+description: Zod v4 breaking changes and gotchas to avoid
+globs: **/*.ts, **/*.tsx
+alwaysApply: true
+---
+
+# Zod v4 Gotchas
+
+## `z.record()` requires TWO arguments
+
+In Zod v4, `z.record(schema)` with ONE argument treats that arg as the **key type**, not the value type (breaking change from v3). The value type is left `undefined`, causing a runtime crash when the AI SDK or anything else tries to convert the schema to JSON Schema:
+
+```
+TypeError: Cannot read properties of undefined (reading '_zod')
+```
+
+```typescript
+// ❌ BROKEN in Zod v4 — z.string() becomes the key type, valueType is undefined
+z.record(z.string())
+z.record(z.any())
+z.record(z.unknown())
+
+// ✅ Always pass two args: z.record(keyType, valueType)
+z.record(z.string(), z.string())   // string keys, string values
+z.record(z.string(), z.unknown())  // string keys, any values
+z.record(z.string(), z.number())   // string keys, number values
+```
+
+## AI SDK tool `inputSchema`: use `jsonSchema()` for open records
+
+The AI SDK's `asSchema()` wraps Zod schemas with `addAdditionalPropertiesToJsonSchema()`, which **overrides `additionalProperties` to `false` on all nested objects**. This breaks any tool parameter that needs to accept arbitrary key-value pairs (e.g., `query_params`, `body`).
+
+Use `jsonSchema()` from `ai` directly when a tool parameter needs `additionalProperties`:
+
+```typescript
+import { jsonSchema, tool } from 'ai'
+
+// ❌ Even with correct 2-arg z.record(), AI SDK will set additionalProperties: false
+// making the schema reject any key-value pairs the LLM tries to pass
+tool({
+  inputSchema: z.object({
+    query_params: z.record(z.string(), z.string()).optional(),
+    body: z.record(z.string(), z.unknown()).optional(),
+  }),
+})
+
+// ✅ Use jsonSchema() to preserve additionalProperties correctly
+tool({
+  inputSchema: jsonSchema<{
+    query_params?: Record<string, string>
+    body?: Record<string, unknown>
+  }>({
+    type: 'object',
+    properties: {
+      query_params: { type: 'object', additionalProperties: { type: 'string' } },
+      body: { type: 'object', additionalProperties: true },
+    },
+    additionalProperties: false,
+  }),
+})
+```

@@ -1,0 +1,175 @@
+---
+description: Authentication pattern using Bearer tokens for all server-side code (API routes AND server actions)
+globs: 
+alwaysApply: true
+---
+
+# Authentication Pattern - Bearer Tokens Everywhere
+
+**ALWAYS use explicit Bearer token authentication for ALL server-side code.**  
+**NEVER rely on cookies for authentication.**
+
+## Why This Pattern?
+
+1. **Explicit authentication** - No cookie ambiguity
+2. **Consistency** - Same pattern for API routes and Server Actions
+3. **Security** - Token validation on every request
+4. **Testability** - Easy to test with explicit tokens
+5. **Works with service role** - Compatible with admin operations
+
+---
+
+## Server-Side API Routes
+
+Use `authenticateRequest` helper from `@/lib/api-auth`:
+
+```typescript
+import { authenticateRequest } from '@/lib/api-auth'
+import { sb } from '@lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(request: NextRequest) {
+  // Authenticate using Bearer token from Authorization header
+  const auth = await authenticateRequest(request)
+  if (!auth.success) return auth.response
+
+  const userId = auth.userId
+
+  // Use userId for database queries
+  const { data } = await sb
+    .from('table_name')
+    .select('*')
+    .eq('user_id', userId)
+
+  return NextResponse.json({ data })
+}
+```
+
+**How it works:**
+- Client sends `Authorization: Bearer <access_token>` header
+- Server verifies token using `sb.auth.getUser(token)`
+- Returns `userId` on success, or 401 response on failure
+
+---
+
+## Server Actions
+
+Use `authenticateToken` helper from `@/lib/api-auth`:
+
+```typescript
+'use server'
+
+import { authenticateToken } from '@/lib/api-auth'
+import { sb } from '@lib/supabase'
+import { revalidatePath } from 'next/cache'
+
+export async function myServerAction(
+  token: string,
+  param1: string,
+  param2: number
+) {
+  // Authenticate using Bearer token passed from client
+  const auth = await authenticateToken(token)
+  if (!auth.success) {
+    return { success: false, error: auth.error }
+  }
+
+  const userId = auth.userId
+
+  // Perform mutation
+  const { data, error } = await sb
+    .from('table_name')
+    .insert({ user_id: userId, param1, param2 })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/app')
+  return { success: true, data }
+}
+```
+
+**How it works:**
+- Client passes `token` as first parameter to server action
+- Server validates token using `sb.auth.getUser(token)`
+- Returns `userId` on success, or error object on failure
+
+**Client-side usage:**
+```typescript
+import { useAuth } from '@/context/auth-provider'
+import { myServerAction } from '@/app/actions/my-actions'
+
+function MyComponent() {
+  const { session } = useAuth()
+  
+  const handleAction = async () => {
+    if (!session?.access_token) return
+    
+    const result = await myServerAction(
+      session.access_token,  // ← Pass token as first param
+      'param1',
+      123
+    )
+  }
+}
+```
+
+---
+
+## Client-Side Helpers
+
+### For API Routes
+
+Use `authenticatedFetch` from `@/lib/api-client`:
+
+```typescript
+import { authenticatedFetch } from '@/lib/api-client'
+
+// Automatically adds Bearer token to Authorization header
+const res = await authenticatedFetch('/api/endpoint', {
+  method: 'POST',
+  body: JSON.stringify(data),
+})
+```
+
+### For Server Actions
+
+Use `useAuth` hook to get token:
+
+```typescript
+import { useAuth } from '@/context/auth-provider'
+
+function MyComponent() {
+  const { session } = useAuth()
+  
+  const handleAction = async () => {
+    if (!session?.access_token) {
+      console.error('No session')
+      return
+    }
+    
+    const result = await myServerAction(session.access_token, 'data')
+  }
+}
+```
+
+---
+
+## DO NOT
+
+- ❌ Use `createServerClient` with cookies
+- ❌ Call `sb.auth.getUser()` without passing a token
+- ❌ Use `cookies()` from `next/headers` for authentication
+- ❌ Manually build Authorization headers in client code
+- ❌ Mix authentication patterns
+
+---
+
+## Summary
+
+**API Routes:** `authenticateRequest(request)` → validates header, returns userId  
+**Server Actions:** `authenticateToken(token)` → validates token param, returns userId  
+**Client (API):** `authenticatedFetch(url, options)` → auto-injects Bearer token  
+**Client (Actions):** Pass `session.access_token` as first parameter  
+**Always:** Use `sb` from `@lib/supabase` for server-side database operations

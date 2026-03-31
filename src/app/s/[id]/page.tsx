@@ -1,0 +1,45 @@
+/**
+ * /s/[id] — Sermon page. Shows processing progress, chat, or error
+ * depending on the sermon's current status.
+ */
+import { supabaseServer } from '@/lib/supabase.server'
+import type { SermonNotes } from '@/types/sermon-notes'
+import { notFound } from 'next/navigation'
+import { SermonChatClient } from './sermon-chat-client'
+import { SermonProcessingView } from './sermon-processing-view'
+
+type Props = {
+  params: Promise<{ id: string }>
+}
+
+export default async function SermonPage({ params }: Props) {
+  const { id } = await params
+
+  const sermonResult = await supabaseServer
+    .from('sermons')
+    .select('id, title, youtube_id, status, processing_step, notes')
+    .eq('id', id)
+    .single()
+
+  if (sermonResult.error || !sermonResult.data) notFound()
+
+  const sermon = sermonResult.data
+
+  if (sermon.status !== 'completed') {
+    return <SermonProcessingView sermon={sermon} />
+  }
+
+  const messagesResult = await supabaseServer
+    .from('messages')
+    .select('id, role, content, created_at')
+    .eq('sermon_id', id)
+    .order('created_at', { ascending: true })
+
+  return (
+    <SermonChatClient
+      sermon={sermon}
+      initialMessages={messagesResult.data ?? []}
+      notes={(sermon.notes as SermonNotes) ?? null}
+    />
+  )
+}

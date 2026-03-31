@@ -1,0 +1,349 @@
+---
+alwaysApply: true
+---
+
+# React Query Key Conventions
+
+This guide establishes consistent conventions for React Query keys throughout the UBILD application to ensure maintainability, clarity, and optimal cache invalidation patterns.
+
+## Core Principles
+
+### 1. Hierarchical Structure
+- Use **nested arrays** for all query keys: `['resource', 'action', ...params]`
+- Always start with the **primary resource** name (e.g., 'jobs', 'workers', 'shifts')
+- Follow with **action/subtype** when applicable (e.g., 'pipeline', 'search', 'fulltime')
+- End with **specific identifiers** (e.g., jobId, userId)
+
+### 2. Naming Convention
+- Use **snake_case** for multi-word resource names: `['job_categories']`, `['sms_notification_history']`
+- Use **singular** resource names when referring to a specific item: `['job', jobId]`
+- Use **plural** resource names when referring to collections: `['jobs', 'fulltime']`
+
+### 3. Consistent Resource Hierarchy
+```typescript
+// ✅ Good - Hierarchical structure
+['workers', 'pipeline', jobId]           // Workers in a job's pipeline
+['workers', 'search']                    // Worker search results
+['workers', 'unified', viewContext]     // Unified worker view
+
+['jobs', 'fulltime']                     // All fulltime jobs
+['jobs', 'ondemand', 'accepted', userId] // User's accepted ondemand jobs
+['job', jobId, 'recommended_workers']    // Recommended workers for a job
+
+['shifts', startDate, endDate]           // Shifts in date range
+['shift', shiftId]                       // Specific shift
+['shift-expenses', shiftId]              // Expenses for a shift
+```
+
+## Resource-Specific Patterns
+
+### Jobs
+```typescript
+// Job collections
+['jobs', 'fulltime']                    // All fulltime jobs
+['jobs', 'ondemand']                    // All ondemand jobs
+['jobs', 'fulltime', 'applied', userId] // User's applied fulltime jobs
+['jobs', 'ondemand', 'accepted', userId] // User's accepted ondemand jobs
+['jobs', 'ondemand', 'available', userId] // Available ondemand jobs for user
+
+// Individual jobs
+['job', jobId]                          // Specific job details
+['job', jobId, businessId]              // Job with business context
+['job', jobId, 'recommended_workers']   // Recommended workers for job
+['job', jobId, 'required_skills']       // Required skills for job
+
+// Job-related data
+['job_categories']                      // All job categories
+['job_category_names']                  // Category names only
+['popular_job_categories', limit]       // Popular categories with limit
+['job_interviews', jobId]               // Interviews for a job
+```
+
+### Workers
+```typescript
+// Worker collections
+['workers']                             // All workers
+['workers', 'staffing']                 // Staffing firm workers
+['workers', 'search']                   // Worker search results
+['workers', 'unified', viewContext]    // Unified worker view
+['workers', 'pipeline', jobId]          // Workers in job pipeline
+
+// Individual workers
+['worker', userId]                      // Specific worker details
+['worker', 'unified', viewContext, userId] // Worker in specific context
+
+// Worker-related data
+['worker', userId, 'categories']        // Worker's categories
+['worker', userId, 'certifications']   // Worker's certifications
+['worker', userId, 'experiences']      // Worker's work experiences
+['worker', userId, 'languages']        // Worker's languages
+['worker', userId, 'shifts']            // Worker's shifts
+['worker', userId, 'job_status', { statuses }] // Worker's job status
+
+// Worker interviews
+['worker', userId, 'interviews']        // All interviews for worker
+['worker', userId, 'interviews', { page, limit, status }] // Paginated interviews
+['worker', userId, 'interviews', interviewId] // Specific interview
+```
+
+### Business & Staffing
+```typescript
+// Business data
+['business', businessId]                // Specific business
+['businesses', 'all']                   // All businesses
+['business_workers', businessId]        // Workers associated with business
+
+// Staffing firms
+['staffing', 'firms']                   // All staffing firms
+['staffing_firm_role_validation']      // Role validation for staffing
+
+// Employers
+['employers']                           // All employers
+```
+
+### Shifts & Time Tracking
+```typescript
+// Shift collections
+['shifts']                              // All shifts
+['shifts', startDate, endDate]          // Shifts in date range
+
+// Individual shifts
+['shift', shiftId]                      // Specific shift details
+['shift-expenses', shiftId]             // Expenses for a shift
+['shift_adjustments', shiftId]          // Adjustments for a shift
+```
+
+### User & Authentication
+```typescript
+// User data
+['user', userId]                        // Specific user details
+['users', userType]                     // Users of specific type
+['auth_user']                           // Current authenticated user
+['userType']                            // Current user's type
+
+// User-specific data
+['sms_notification_history', userId, phoneNumber] // SMS history
+```
+
+### Admin & System
+```typescript
+// Admin queries
+['admin', 'workers']                    // Admin worker management
+['admin', 'jobs']                       // Admin job management
+['admin', 'notifications']              // Admin notifications
+['admin', 'prompts']                    // Admin prompts
+['admin', 'scoring-weights']            // Admin scoring weights
+
+// System data
+['certifications']                      // All certifications
+['certifications', userId]             // User's certifications
+['certification', certificationId]     // Specific certification
+```
+
+## Query Key Function Patterns
+
+### 1. Naming Convention
+```typescript
+// ✅ Good - Descriptive function names
+export const getJobQueryKey = (jobId: string) => ['job', jobId]
+export const getJobsQueryKey = (type: 'fulltime' | 'ondemand') => ['jobs', type]
+export const getPipelineWorkersQueryKey = (jobId: string) => ['workers', 'pipeline', jobId]
+
+// ✅ Good - Hierarchical worker keys
+export const workerQueryKeys = {
+  worker: (userId: string) => ['worker', userId] as const,
+  interviews: (userId: string) => ['worker', userId, 'interviews'] as const,
+  interviewsPaginated: (userId: string, page: number, limit: number, status?: string) => 
+    ['worker', userId, 'interviews', { page, limit, status }] as const,
+  categories: (userId: string) => ['worker', userId, 'categories'] as const,
+}
+
+// ❌ Avoid - Unclear or inconsistent names
+export const jobKey = (id) => ['job', id]
+export const getAllJobs = (type) => ['jobs', type]
+export const getWorkerCategoriesQueryKey = (userId: string) => ['worker_categories', userId] // Old flat pattern
+```
+
+### 2. Type Safety
+```typescript
+// ✅ Good - Proper TypeScript types
+export const getJobQueryKey = (jobId: Tables<'jobs'>['id']) => ['job', jobId.toString()]
+export const getWorkerQueryKey = (userId: Tables<'users'>['id']) => ['worker', userId]
+
+// ✅ Good - Optional parameters with defaults
+export const getJobQueryKey = (
+  jobId: Tables<'jobs'>['id'],
+  businessId?: string
+) => ['job', jobId.toString(), businessId || 'all']
+```
+
+### 3. Consistent Export Patterns
+```typescript
+// ✅ Good - Export both hook and query key function
+export const getPipelineWorkersQueryKey = (jobId: string) => ['workers', 'pipeline', jobId]
+
+export function useGetPipelineWorkers(jobId: string) {
+  return useSuspenseQuery({
+    queryKey: getPipelineWorkersQueryKey(jobId),
+    queryFn: () => getPipelineWorkers(jobId),
+  })
+}
+
+export { getPipelineWorkersQueryKey, useGetPipelineWorkers }
+```
+
+## Cache Invalidation Patterns
+
+### 1. Specific Invalidation
+```typescript
+// ✅ Good - Invalidate specific queries
+queryClient.invalidateQueries({ queryKey: ['workers', 'pipeline', jobId] })
+queryClient.invalidateQueries({ queryKey: ['job', jobId] })
+
+// ✅ Good - Invalidate related data
+queryClient.invalidateQueries({ queryKey: ['jobs', 'fulltime'] })
+queryClient.invalidateQueries({ queryKey: ['workers'] }) // All worker queries
+```
+
+### 2. Hierarchical Invalidation
+```typescript
+// ✅ Good - Leverage query key hierarchy
+// This invalidates all job-related queries for the specific job
+queryClient.invalidateQueries({ queryKey: ['job', jobId] })
+
+// This invalidates all worker queries
+queryClient.invalidateQueries({ queryKey: ['workers'] })
+
+// This invalidates all shift-related queries
+queryClient.invalidateQueries({ queryKey: ['shifts'] })
+```
+
+### 3. Context-Aware Invalidation
+```typescript
+// ✅ Good - Invalidate based on business context
+const invalidateJobQueries = (jobId: string, businessId?: string) => {
+  queryClient.invalidateQueries({ queryKey: ['job', jobId] })
+  queryClient.invalidateQueries({ queryKey: ['jobs'] })
+  if (businessId) {
+    queryClient.invalidateQueries({ queryKey: ['business', businessId] })
+  }
+}
+```
+
+## Migration Guidelines
+
+### Converting Legacy Keys
+```typescript
+// ❌ Old patterns to migrate
+'getPipelineWorkers'           → ['workers', 'pipeline', jobId]
+'staffingFirms'               → ['staffing', 'firms']
+'recommendedWorkers'          → ['workers', 'recommended', jobId] or ['job', jobId, 'recommended_workers']
+'jobRecommendations'          → ['jobs', 'recommendations', jobId]
+'worker_interviews'           → ['worker', userId, 'interviews', { page, limit, status }]
+'user_interviews'             → ['worker', userId, 'interviews']
+'complete_interview_details'  → ['worker', userId, 'interviews', interviewId]
+
+// ✅ Already good patterns
+['workers', 'search']         ✓ Keep as is
+['job', jobId, 'recommended_workers'] ✓ Keep as is
+['shifts', startDate, endDate] ✓ Keep as is
+['worker', userId, 'interviews'] ✓ New hierarchical worker pattern
+```
+
+### Refactoring Steps
+1. **Identify** legacy query keys using camelCase or non-hierarchical structure
+2. **Design** new hierarchical key structure following the patterns above
+3. **Create** query key functions for reusability
+4. **Update** all hook implementations to use new keys
+5. **Update** all invalidation calls throughout the codebase
+6. **Test** to ensure no broken queries
+
+## Testing Query Keys
+
+### 1. Test Query Key Functions
+```typescript
+describe('Query Key Functions', () => {
+  it('returns correct query key for pipeline workers', () => {
+    const queryKey = getPipelineWorkersQueryKey('123')
+    expect(queryKey).toEqual(['workers', 'pipeline', '123'])
+  })
+
+  it('handles optional parameters correctly', () => {
+    const queryKey = getJobQueryKey(123, 'business-456')
+    expect(queryKey).toEqual(['job', '123', 'business-456'])
+  })
+})
+```
+
+### 2. Test Cache Invalidation
+```typescript
+it('invalidates correct queries on mutation', () => {
+  // Test that mutations invalidate the right query keys
+  expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+    queryKey: ['workers', 'pipeline', jobId]
+  })
+})
+```
+
+## Common Anti-Patterns to Avoid
+
+### ❌ Don't Use These Patterns
+```typescript
+// Single string keys
+'jobs'
+'workers'
+'getPipelineWorkers'
+
+// camelCase in keys
+['recommendedWorkers', jobId]
+['jobCategories']
+['staffingFirms']
+
+// Inconsistent nesting
+['job', 'fulltime', jobId]    // Should be ['jobs', 'fulltime'] or ['job', jobId]
+['worker', 'categories', userId]  // Should be ['worker_categories', userId]
+
+// Non-descriptive keys
+['data', id]
+['items', type]
+['list']
+```
+
+### ✅ Use These Patterns Instead
+```typescript
+// Hierarchical arrays with consistent naming
+['jobs', 'fulltime']
+['workers', 'pipeline', jobId]
+['job_categories']
+['staffing', 'firms']
+
+// Clear resource hierarchy
+['job', jobId, 'recommended_workers']
+['worker_categories', userId]
+['shift_expenses', shiftId]
+
+// Descriptive and typed
+['workers', 'unified', viewContext, userId]
+['sms_notification_history', userId, phoneNumber]
+```
+
+## Implementation Checklist
+
+When implementing new query keys:
+
+- [ ] Follow hierarchical structure: `['resource', 'action', ...params]`
+- [ ] Use snake_case for multi-word names
+- [ ] Create reusable query key functions
+- [ ] Export both hook and query key function
+- [ ] Add proper TypeScript types
+- [ ] Update related invalidation calls
+- [ ] Write tests for query key functions
+- [ ] Document any complex invalidation patterns
+
+## Benefits of This Structure
+
+1. **Predictable Cache Invalidation**: Hierarchical keys make it easy to invalidate related queries
+2. **Better IntelliSense**: Typed query key functions provide better autocomplete
+3. **Easier Debugging**: Clear naming makes it easy to identify queries in DevTools
+4. **Maintainability**: Consistent patterns make the codebase easier to navigate
+5. **Performance**: Efficient invalidation reduces unnecessary re-fetches

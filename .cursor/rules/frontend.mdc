@@ -1,0 +1,127 @@
+---
+alwaysApply: true
+---
+# Grout Design System
+
+## Philosophy
+
+Typography-first, extreme minimalism. Let the words do the work. Every element must earn its place — if it doesn't serve a clear purpose, remove it. Inspired by Sesame, Linear, and Vercel.
+
+## Color
+
+- **Primary**: Orange — `--primary: 24.6 95% 53.1%` in `globals.css`
+- **Color restraint**: Orange appears ONLY on CTAs and small brand accents. Everything else is black + gray + white.
+- **Background**: Off-white `#fafafa`, not pure white
+- **Semantic tokens only** — never hardcode `bg-orange-*` / `text-orange-*`:
+  - `bg-primary` / `text-primary` / `text-primary-foreground`
+  - `bg-primary/10` for tinted backgrounds
+  - `hover:bg-primary/90` for hover states
+  - `border-primary/20` for subtle borders
+- **Neutral palette**: `gray-900` for headings, `gray-400` for secondary text, `gray-200` for borders, `gray-50` for subtle fills
+- **Status colors** (used sparingly): green = success, red = error, amber = warning, blue = info
+
+## Typography
+
+- **Two fonts**: Lora (`font-serif`, `--font-lora`) for headings, DM Sans (`font-sans`, `--font-dm-sans`) for everything else. Both loaded in `layout.tsx`, mapped to `font-serif` and `font-sans` in `tailwind.config.ts`.
+- **Serif/sans contrast IS the design** — the pairing creates visual tension. Headings and display numbers are serif, body is sans. Never mix.
+- **Heading sizes**: Large — `text-5xl sm:text-6xl lg:text-7xl` for hero h1, `text-3xl sm:text-4xl` for section headings
+- **Serif weight**: Lora supports 400–700. Use `font-semibold` on headings for presence.
+- **Secondary text**: `text-gray-400` for subtitles, `text-gray-300` for disclaimers
+- **Labels/eyebrows**: `text-sm uppercase tracking-widest text-gray-400 font-medium` — subtle, never loud
+- **Stats/numbers**: Use `font-sans font-bold` for inline stat numbers, not serif
+
+```tsx
+// ✅ Serif heading + sans body
+<h1 className="font-serif font-semibold text-5xl sm:text-6xl lg:text-7xl leading-[1.05] text-gray-900">
+  Never miss<br />a call again
+</h1>
+<p className="text-xl text-gray-400 max-w-md leading-relaxed">Subtitle in DM Sans</p>
+
+// ✅ Serif on large display numbers
+<span className="font-serif text-5xl text-gray-900">$299</span>
+
+// ❌ Sans on headings (loses the editorial feel)
+<h1 className="font-sans text-5xl font-bold">...</h1>
+```
+
+## Visual Style
+
+- **Flat design** — zero shadows on cards, containers, or any UI element
+- **No exceptions** for shadows except: CTA buttons may optionally have `shadow-sm`
+- **No gradients** on surfaces
+- **No decorative elements** — no icon containers with colored backgrounds, no badge pills for labels. Use plain text instead.
+- **Borders**: `border-gray-100` for subtle dividers, `border-gray-200` for card borders
+- **Rounded corners**: `rounded-lg` for CTAs/buttons, `rounded-2xl` for cards/containers, `rounded-lg` for smaller elements
+
+## Spacing
+
+- **Generous whitespace** — err on MORE space. Whitespace is a design element.
+- **Hero**: `pt-24 sm:pt-32 lg:pt-40` — push content down, let it breathe
+- **Sections**: `py-24` minimum between major sections
+- **Grid gaps**: `gap-16 lg:gap-20` for hero grid, `gap-6` for card grids
+- **Inner spacing**: `space-y-10` for hero content blocks, `space-y-6` for content groups within
+
+## Components
+
+### Buttons
+
+- Primary CTA: `bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-8`
+- Secondary: `bg-gray-900 hover:bg-gray-800 text-white`
+- Use `isLoading` prop, never `disabled`
+- Icons inside `<Button>` need NO margin — button has `gap-2`
+- **Never use `asChild` on `<Button>` when it has multiple children** (icon + text). Radix `Slot` calls `React.Children.only` and crashes. Instead, wrap `<Button>` inside `<Link>`:
+  ```tsx
+  // ❌ Crashes — Slot expects a single child element
+  <Button asChild><Link href="/"><Icon /> Text</Link></Button>
+
+  // ✅ Works — Link wraps Button, no Slot involved
+  <Link href="/"><Button><Icon /> Text</Button></Link>
+  ```
+- Only one primary CTA per section — don't dilute with secondary buttons
+
+### Cards
+
+- `border border-gray-200 rounded-2xl` — no shadow
+- Highlighted card: `border-gray-900 border-2` — dark border, not colored
+- No hover effects on cards
+
+### Stats
+
+- Inline text, not boxed components: `<strong className="text-gray-900 text-lg">35-80%</strong> calls missed`
+- No icon containers, no colored backgrounds
+
+### Nav
+
+- `bg-[#fafafa]/80 backdrop-blur-sm sticky top-0 z-50`
+- Logo: icon + text, no background container on the icon
+- Minimal links — only what's essential
+- One CTA button: `rounded-lg`
+
+### Footer
+
+- Minimal: logo + copyright. Nothing else needed.
+- Use `text-gray-400` for all footer text, `text-gray-300` for copyright
+
+## Landing Page
+
+Two sections only:
+1. **Hero** — eyebrow label, oversized headline, subtitle, inline stats, single CTA, conversation demo widget
+2. **Pricing** — heading, two-tier cards
+
+No feature grids, no how-it-works, no testimonials, no waitlist, no trades list.
+
+## Anti-patterns
+
+- ❌ Hardcoded color classes (`bg-orange-500`)
+- ❌ Shadows on anything except CTA buttons
+- ❌ Badges as labels — use plain `text-sm uppercase tracking-widest` text
+- ❌ Icon containers with colored backgrounds (e.g. `bg-primary/10 rounded-xl` wrapping an icon)
+- ❌ Multiple CTAs competing for attention in the same section
+- ❌ `variant="secondary"` on any component
+- ❌ Icon margins inside buttons (`mr-2`)
+- ❌ `disabled` instead of `isLoading`
+- ❌ Pure white (`#fff`) backgrounds — use `#fafafa`
+- ❌ Small headline sizes (`text-3xl` or below for hero h1)
+- ❌ Heavy font weights on body text
+- ❌ Decorative elements that don't serve a function
+- ❌ `CheckCircle2` or any circle-check icons — use `Check` from lucide-react instead
