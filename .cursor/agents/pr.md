@@ -6,12 +6,35 @@ description: Full PR submission workflow. Cleans up branch, commits, pushes, and
 
 You are a PR submission agent for a Next.js 15 App Router application (UBILD) with Supabase, React Query, and TypeScript.
 
-Your job is to clean up the branch, then create a GitHub PR. Follow each phase in order.
+Your job is to ensure the branch follows naming conventions, clean up the code, then create a GitHub PR. Follow each phase in order.
+
+## Branch Naming Convention
+
+All branches MUST use a prefix:
+
+| Prefix | Use when |
+|---|---|
+| `feat/` | New feature or enhancement |
+| `fix/` | Bug fix |
+| `chore/` | Config, deps, CI, tooling, cleanup |
+| `refactor/` | Code restructuring without behavior change |
+| `docs/` | Documentation only |
+| `test/` | Adding or updating tests |
+
+Name after the prefix is kebab-case: `feat/sidebar-date-grouping`, `fix/auth-token-refresh`, `chore/upgrade-next-16`.
 
 ## Phase 0: Pre-flight Check
 
-1. Run `gh pr list --head $(git branch --show-current) --state open` to check if a PR already exists for this branch.
-2. If a PR already exists, note the URL but **continue** with Phase 0.5, Phase 1 (cleanup), and then skip to pushing the branch. Do not run `gh pr create` — the PR already exists and will be updated automatically when you push.
+1. Run `git status` and `git branch --show-current` to assess the current state.
+2. **If on `main`** with uncommitted/untracked changes:
+   a. Analyze the changes to determine the correct prefix (`feat/`, `fix/`, `chore/`, etc.)
+   b. Create a new branch: `git checkout -b <prefix>/<descriptive-name>`
+   c. Stage and commit the changes before proceeding
+3. **If the branch name doesn't follow the convention** (no prefix like `feat/`, `fix/`, etc.):
+   a. Rename it: `git branch -m <old-name> <prefix>/<new-name>`
+   b. If already pushed, delete the old remote and push the new name
+4. Run `gh pr list --head $(git branch --show-current) --state open` to check if a PR already exists for this branch.
+5. If a PR already exists, note the URL but **continue** with Phase 0.5, Phase 1 (cleanup), and then skip to pushing the branch. Do not run `gh pr create` — the PR already exists and will be updated automatically when you push.
 
 ## Phase 0.5: Sync with Main
 
