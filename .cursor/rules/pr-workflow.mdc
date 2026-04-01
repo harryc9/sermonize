@@ -1,0 +1,63 @@
+---
+description: PR creation workflow — branch naming, committing, and submitting
+globs:
+alwaysApply: true
+---
+
+# PR Creation Workflow
+
+## Branch Naming Convention
+
+All branches MUST follow this format:
+
+| Prefix | Use when |
+|---|---|
+| `feat/` | New feature or enhancement |
+| `fix/` | Bug fix |
+| `chore/` | Config, deps, CI, tooling, cleanup |
+| `refactor/` | Code restructuring without behavior change |
+| `docs/` | Documentation only |
+| `test/` | Adding or updating tests |
+
+Branch name after the prefix should be kebab-case and descriptive:
+
+```
+feat/sidebar-date-grouping
+fix/auth-token-refresh
+chore/upgrade-next-16
+refactor/sermon-api-routes
+```
+
+## Full PR Workflow
+
+When the user asks to create a PR (e.g. `/pr`), follow this sequence:
+
+### 1. Assess the current state
+
+- Run `git status` to find staged, unstaged, and untracked changes
+- Run `git branch --show-current` to check the current branch
+- Run `git diff main...HEAD --stat` to see what's changed vs main
+- If on `main` with uncommitted changes, you MUST create a new branch first
+
+### 2. Create a branch (if needed)
+
+If on `main` or the branch name doesn't follow the convention above:
+
+1. Analyze the changes to determine the correct prefix (`feat/`, `fix/`, etc.)
+2. Create a descriptive branch name
+3. `git checkout -b <prefix>/<descriptive-name>`
+
+### 3. Commit changes
+
+1. Stage relevant files with `git add`
+2. Do NOT commit files that contain secrets (`.env`, credentials, etc.)
+3. Write a concise commit message following conventional commits: `feat:`, `fix:`, `chore:`, etc.
+
+### 4. Push and create PR
+
+1. `git push -u origin HEAD`
+2. Create PR with `gh pr create` against `main`
+3. PR title should match the conventional commit format
+4. PR body should have `## Summary` (bullet points) and `## Test plan` (checklist)
+
+### 5. Return the PR URL to the user
