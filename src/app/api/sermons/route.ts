@@ -55,16 +55,31 @@ export async function POST(request: NextRequest) {
           .update({ status: 'pending', error: null })
           .eq('id', existing.id)
 
-        await inngest.send({
-          name: 'sermon/transcribe',
-          data: {
-            sermon_id: existing.id,
-            youtube_id: youtubeId,
-            youtube_url: url,
-            start_ms: startMs,
-            end_ms: endMs,
-          },
-        })
+        try {
+          await inngest.send({
+            name: 'sermon/transcribe',
+            data: {
+              sermon_id: existing.id,
+              youtube_id: youtubeId,
+              youtube_url: url,
+              start_ms: startMs,
+              end_ms: endMs,
+            },
+          })
+        } catch (sendErr) {
+          console.error('[sermons] Inngest send failed for stuck retry', sendErr)
+          await supabaseServer
+            .from('sermons')
+            .update({
+              status: 'error',
+              error: 'Failed to start processing. Please try again.',
+            })
+            .eq('id', existing.id)
+          return NextResponse.json(
+            { error: 'Failed to start processing. Please try again.' },
+            { status: 500 },
+          )
+        }
 
         return NextResponse.json({ sermon: { ...existing, status: 'pending' } })
       }
@@ -88,16 +103,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    await inngest.send({
-      name: 'sermon/transcribe',
-      data: {
-        sermon_id: sermon.id,
-        youtube_id: youtubeId,
-        youtube_url: url,
-        start_ms: startMs,
-        end_ms: endMs,
-      },
-    })
+    try {
+      await inngest.send({
+        name: 'sermon/transcribe',
+        data: {
+          sermon_id: sermon.id,
+          youtube_id: youtubeId,
+          youtube_url: url,
+          start_ms: startMs,
+          end_ms: endMs,
+        },
+      })
+    } catch (sendErr) {
+      console.error('[sermons] Inngest send failed, rolling back sermon', sendErr)
+      await supabaseServer
+        .from('sermons')
+        .update({
+          status: 'error',
+          error: 'Failed to start processing. Please try again.',
+        })
+        .eq('id', sermon.id)
+      return NextResponse.json(
+        { error: 'Failed to start processing. Please try again.' },
+        { status: 500 },
+      )
+    }
 
     return NextResponse.json({ sermon })
   } catch (err) {
