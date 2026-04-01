@@ -39,7 +39,7 @@ function groupSermonsByDate(sermons: SermonListItem[]): DateGroup[] {
   const order: string[] = []
 
   for (const sermon of sermons) {
-    const dt = DateTime.fromISO(sermon.created_at).startOf('day')
+    const dt = DateTime.fromISO(sermon.created_at).toLocal().startOf('day')
     const diff = now.diff(dt, 'days').days
 
     let label: string
