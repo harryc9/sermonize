@@ -1,0 +1,32 @@
+---
+description: Tests must use real Supabase calls, never mocks
+globs: ["**/*.test.*", "**/*.core.test.*", "**/*.e2e.*"]
+alwaysApply: true
+---
+
+# No Mocking Supabase in Tests
+
+**NEVER mock Supabase clients or auth functions in tests.** All tests must use real Supabase calls against the cloud project.
+
+## Banned Patterns
+
+```typescript
+// ❌ All of these are banned
+vi.mock('@/lib/supabase.client')
+vi.mock('@/lib/supabase.server')
+vi.mock('@/lib/supabase.client', () => ({ sbc: { auth: { signUp: vi.fn() } } }))
+vi.mock('@/context/auth-provider')
+const mockGetUser = vi.fn()
+```
+
+## Use Instead
+
+- **Test users:** Create with `supabaseServer.auth.admin.createUser({ email, password, email_confirm: true })`
+- **Sign in:** Use real `sbc.auth.signInWithPassword()` calls
+- **Token validation:** Use real access tokens from sign-in sessions
+- **Cleanup:** Delete test users with `supabaseServer.auth.admin.deleteUser(userId)` in `afterAll`
+- **Test emails:** Use disposable format `test-{uuid}@sermonize-test.com`
+
+## Why
+
+Mocking Supabase hides real integration failures. Tests should verify the actual auth plumbing works end-to-end — token issuance, validation, expiry, and rejection.

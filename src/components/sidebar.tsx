@@ -7,7 +7,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DateTime } from 'luxon'
-import { Plus, Menu, X, MessageSquare, LogOut, Loader2, RotateCw } from 'lucide-react'
+import { Plus, Menu, X, LogOut, Loader2, RotateCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -108,8 +108,6 @@ export function Sidebar() {
     setIsOpen(false)
   }
 
-  if (!isAuthenticated) return null
-
   return (
     <>
       <Button
@@ -139,7 +137,7 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleNavigate('/')}
+            onClick={() => handleNavigate('/dashboard')}
             title="New sermon"
           >
             <Plus size={18} />
@@ -178,11 +176,22 @@ export function Sidebar() {
                     activeId === sermon.id && 'bg-gray-100',
                   )}
                 >
-                  {isTranscribing ? (
-                    <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin text-gray-400" />
-                  ) : (
-                    <MessageSquare size={16} className="mt-0.5 shrink-0 text-gray-400" />
-                  )}
+                  <div className="relative mt-0.5 shrink-0">
+                    <img
+                      src={`https://img.youtube.com/vi/${sermon.youtube_id}/mqdefault.jpg`}
+                      alt=""
+                      className={cn(
+                        'h-7 w-12 rounded object-cover',
+                        isTranscribing && 'opacity-40',
+                      )}
+                    />
+                    {isTranscribing && (
+                      <Loader2
+                        size={14}
+                        className="absolute inset-0 m-auto animate-spin text-gray-500"
+                      />
+                    )}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-gray-900">
                       {sermon.title || 'Untitled Sermon'}
@@ -214,20 +223,19 @@ export function Sidebar() {
             })}
         </nav>
 
-        {isAuthenticated && (
-          <div className="border-t px-4 py-3">
-            <button
-              onClick={async () => {
-                await signOut()
-                router.push('/auth')
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            >
-              <LogOut size={14} />
-              <span className="truncate">{user?.email ?? 'Sign out'}</span>
-            </button>
-          </div>
-        )}
+        <div className="border-t px-4 py-3">
+          <button
+            onClick={async () => {
+              queryClient.clear()
+              await signOut()
+              window.location.href = '/auth'
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
+            <LogOut size={14} />
+            <span className="truncate">{user?.email ?? 'Sign out'}</span>
+          </button>
+        </div>
       </aside>
     </>
   )

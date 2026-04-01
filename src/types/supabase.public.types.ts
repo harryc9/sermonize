@@ -49,6 +49,39 @@ export type Database = {
           },
         ]
       }
+      monitored_projects: {
+        Row: {
+          created_at: string
+          failure_threshold_pct: number
+          id: string
+          is_active: boolean
+          name: string
+          service_role_key: string
+          slack_webhook_url: string | null
+          supabase_url: string
+        }
+        Insert: {
+          created_at?: string
+          failure_threshold_pct?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          service_role_key: string
+          slack_webhook_url?: string | null
+          supabase_url: string
+        }
+        Update: {
+          created_at?: string
+          failure_threshold_pct?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          service_role_key?: string
+          slack_webhook_url?: string | null
+          supabase_url?: string
+        }
+        Relationships: []
+      }
       sermons: {
         Row: {
           created_at: string
@@ -134,7 +167,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      auth_health_metrics: {
+        Args: { window_start: string }
+        Returns: {
+          login_failure: number
+          login_success: number
+          signups: number
+          token_refreshes: number
+          total_events: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

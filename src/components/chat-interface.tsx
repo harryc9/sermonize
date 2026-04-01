@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { sbc } from '@/lib/supabase.client'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, type UIMessage } from 'ai'
+import { BIBLE_VERSE_RE, buildVerseUrl } from '@/lib/bible-utils'
 import { ArrowUp } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -151,6 +152,43 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
     [onTimestampClick],
   )
 
+  const renderWithVerseLinks = useCallback(
+    (children: ReactNode): ReactNode => {
+      return flatMapChildren(children, (child) => {
+        if (typeof child !== 'string') return [child]
+        const parts: ReactNode[] = []
+        let lastIndex = 0
+        const regex = new RegExp(BIBLE_VERSE_RE.source, 'gi')
+        let match: RegExpExecArray | null
+
+        while ((match = regex.exec(child)) !== null) {
+          if (match.index > lastIndex)
+            parts.push(child.slice(lastIndex, match.index))
+
+          const verseRef = match[0]
+          const url = buildVerseUrl(verseRef)
+          parts.push(
+            <a
+              key={`${verseRef}-${match.index}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary/60"
+            >
+              {verseRef}
+            </a>,
+          )
+          lastIndex = regex.lastIndex
+        }
+
+        if (lastIndex === 0) return [child]
+        if (lastIndex < child.length) parts.push(child.slice(lastIndex))
+        return parts
+      })
+    },
+    [],
+  )
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!input.trim() || isLoading) return
@@ -185,9 +223,9 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
                 {message.role === 'assistant' ? (
                   <ReactMarkdown
                     components={{
-                      p: ({ children }) => <p className="mb-2 last:mb-0">{renderWithTimestamps(children)}</p>,
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{renderWithVerseLinks(renderWithTimestamps(children))}</p>,
                       strong: ({ children }) => (
-                        <strong className="font-semibold">{children}</strong>
+                        <strong className="font-semibold">{renderWithVerseLinks(renderWithTimestamps(children))}</strong>
                       ),
                       ul: ({ children }) => (
                         <ul className="mb-2 ml-4 list-disc last:mb-0">{children}</ul>
@@ -195,7 +233,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
                       ol: ({ children }) => (
                         <ol className="mb-2 ml-4 list-decimal last:mb-0">{children}</ol>
                       ),
-                      li: ({ children }) => <li className="mb-1">{renderWithTimestamps(children)}</li>,
+                      li: ({ children }) => <li className="mb-1">{renderWithVerseLinks(renderWithTimestamps(children))}</li>,
                       code: ({ children }) => (
                         <code className="rounded bg-background/50 px-1 py-0.5 text-xs">
                           {children}

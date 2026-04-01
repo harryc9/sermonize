@@ -6,6 +6,7 @@
 'use client'
 
 import { authenticatedFetch } from '@/lib/api-client'
+import { buildVerseUrl } from '@/lib/bible-utils'
 import type { SermonNotes as SermonNotesType } from '@/types/sermon-notes'
 import { BookOpen, Loader2, RefreshCw, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -66,18 +67,18 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
       <div className="flex-1 overflow-y-auto">
         <div className="aspect-video w-full">{player}</div>
 
-        <div className="space-y-5 p-4">
-          <p className="text-sm leading-relaxed text-gray-600">{notes.summary}</p>
+        <div className="px-4 py-5">
+          <p className="text-sm leading-relaxed text-gray-500">{notes.summary}</p>
 
-          <div className="space-y-2">
-            <h4 className="text-xs font-medium uppercase tracking-widest text-gray-400">Key Highlights</h4>
-            <ul className="space-y-2">
+          <div className="mt-8">
+            <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Key Highlights</h4>
+            <ul className="mt-3 space-y-3">
               {notes.highlights.map((h, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-gray-700">
+                <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-gray-700">
                   <button
                     type="button"
                     onClick={() => onTimestampClick(Math.max(0, h.offset - 10))}
-                    className="mt-0.5 shrink-0 cursor-pointer rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                    className="mt-0.5 shrink-0 cursor-pointer rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium tabular-nums text-primary transition-colors hover:bg-primary/20"
                   >
                     {h.timestamp.replace(/[[\]]/g, '')}
                   </button>
@@ -88,13 +89,13 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
           </div>
 
           {notes.verses.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium uppercase tracking-widest text-gray-400">Verses Referenced</h4>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="mt-8">
+              <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Verses Referenced</h4>
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {notes.verses.map((verse) => (
                   <a
                     key={verse}
-                    href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(verse)}&version=NIV`}
+                    href={buildVerseUrl(verse)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-900"

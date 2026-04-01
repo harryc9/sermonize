@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "web-typography": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "154c59a8ef89a5f47127eec776cf46a7d00e6ae331bc2ac407b395b819589017"
+    }
+  }
+}

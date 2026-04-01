@@ -16,7 +16,7 @@ export default function SermonNotFound() {
           This sermon doesn&apos;t exist or is still being transcribed. Try again in a moment.
         </p>
       </div>
-      <Link href="/">
+      <Link href="/dashboard">
         <Button>
           <ArrowLeft size={16} />
           Back to home
