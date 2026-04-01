@@ -31,6 +31,34 @@ const STEP_LABELS: Record<string, string> = {
   saving: 'Saving…',
 }
 
+type DateGroup = { label: string; sermons: SermonListItem[] }
+
+function groupSermonsByDate(sermons: SermonListItem[]): DateGroup[] {
+  const now = DateTime.now().startOf('day')
+  const buckets: Record<string, SermonListItem[]> = {}
+  const order: string[] = []
+
+  for (const sermon of sermons) {
+    const dt = DateTime.fromISO(sermon.created_at).startOf('day')
+    const diff = now.diff(dt, 'days').days
+
+    let label: string
+    if (diff < 1) label = 'Today'
+    else if (diff < 2) label = 'Yesterday'
+    else if (diff < 7) label = 'Last 7 days'
+    else if (diff < 30) label = 'Last 30 days'
+    else label = dt.toFormat('MMMM yyyy')
+
+    if (!buckets[label]) {
+      buckets[label] = []
+      order.push(label)
+    }
+    buckets[label].push(sermon)
+  }
+
+  return order.map((label) => ({ label, sermons: buckets[label] }))
+}
+
 function getSermonListQueryKey() {
   return ['sermons', 'list'] as const
 }
@@ -150,77 +178,82 @@ export function Sidebar() {
               No sermons yet
             </p>
           )}
-          {sermons
-            .filter((s) => s.status !== 'error')
-            .map((sermon) => {
-              const isTranscribing = sermon.status === 'pending' || sermon.status === 'processing'
-              const retryTime = retriedAt[sermon.id]
-              const lastActivity = retryTime
-                ? DateTime.fromMillis(retryTime)
-                : DateTime.fromISO(sermon.created_at)
-              const isStuck =
-                isTranscribing &&
-                lastActivity.diffNow('minutes').minutes < -STUCK_THRESHOLD_MINUTES
-              const isRetrying = retryMutation.isPending && retryMutation.variables === sermon.id
+          {groupSermonsByDate(sermons.filter((s) => s.status !== 'error')).map((group) => (
+            <div key={group.label} className="mb-1">
+              <p className="px-3 pb-1 pt-3 text-xs font-medium uppercase tracking-widest text-gray-400">
+                {group.label}
+              </p>
+              {group.sermons.map((sermon) => {
+                const isTranscribing = sermon.status === 'pending' || sermon.status === 'processing'
+                const retryTime = retriedAt[sermon.id]
+                const lastActivity = retryTime
+                  ? DateTime.fromMillis(retryTime)
+                  : DateTime.fromISO(sermon.created_at)
+                const isStuck =
+                  isTranscribing &&
+                  lastActivity.diffNow('minutes').minutes < -STUCK_THRESHOLD_MINUTES
+                const isRetrying = retryMutation.isPending && retryMutation.variables === sermon.id
 
-              const stepLabel = isTranscribing
-                ? (sermon.processing_step && STEP_LABELS[sermon.processing_step]) || 'Processing…'
-                : null
+                const stepLabel = isTranscribing
+                  ? (sermon.processing_step && STEP_LABELS[sermon.processing_step]) || 'Processing…'
+                  : null
 
-              return (
-                <button
-                  key={sermon.id}
-                  onClick={() => handleNavigate(`/s/${sermon.id}`)}
-                  className={cn(
-                    'flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-gray-100',
-                    activeId === sermon.id && 'bg-gray-100',
-                  )}
-                >
-                  <div className="relative mt-0.5 shrink-0">
-                    <img
-                      src={`https://img.youtube.com/vi/${sermon.youtube_id}/mqdefault.jpg`}
-                      alt=""
-                      className={cn(
-                        'h-7 w-12 rounded object-cover',
-                        isTranscribing && 'opacity-40',
-                      )}
-                    />
-                    {isTranscribing && (
-                      <Loader2
-                        size={14}
-                        className="absolute inset-0 m-auto animate-spin text-gray-500"
-                      />
+                return (
+                  <button
+                    key={sermon.id}
+                    onClick={() => handleNavigate(`/s/${sermon.id}`)}
+                    className={cn(
+                      'flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-gray-100',
+                      activeId === sermon.id && 'bg-gray-100',
                     )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-gray-900">
-                      {sermon.title || 'Untitled Sermon'}
-                    </p>
-                    {isStuck ? (
-                      <span
-                        role="button"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (!isRetrying) retryMutation.mutate(sermon.id)
-                        }}
-                      >
-                        {isRetrying ? (
-                          <Loader2 size={10} className="animate-spin" />
-                        ) : (
-                          <RotateCw size={10} />
+                  >
+                    <div className="relative mt-0.5 shrink-0">
+                      <img
+                        src={`https://img.youtube.com/vi/${sermon.youtube_id}/mqdefault.jpg`}
+                        alt=""
+                        className={cn(
+                          'h-7 w-12 rounded object-cover',
+                          isTranscribing && 'opacity-40',
                         )}
-                        Stuck — retry
-                      </span>
-                    ) : (
-                      <p className="text-xs text-gray-400">
-                        {stepLabel ?? DateTime.fromISO(sermon.created_at).toRelative()}
+                      />
+                      {isTranscribing && (
+                        <Loader2
+                          size={14}
+                          className="absolute inset-0 m-auto animate-spin text-gray-500"
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-gray-900">
+                        {sermon.title || 'Untitled Sermon'}
                       </p>
-                    )}
-                  </div>
-                </button>
-              )
-            })}
+                      {isStuck ? (
+                        <span
+                          role="button"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (!isRetrying) retryMutation.mutate(sermon.id)
+                          }}
+                        >
+                          {isRetrying ? (
+                            <Loader2 size={10} className="animate-spin" />
+                          ) : (
+                            <RotateCw size={10} />
+                          )}
+                          Stuck — retry
+                        </span>
+                      ) : (
+                        <p className="text-xs text-gray-400">
+                          {stepLabel ?? DateTime.fromISO(sermon.created_at).toRelative()}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="border-t px-4 py-3">

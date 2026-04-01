@@ -33,7 +33,7 @@
     "inngest": "^4.1.0",
     "lucide-react": "^1.7.0",
     "luxon": "^3.7.2",
-    "next": "^16.0.8",
+    "next": "^16.2.2",
     "next-safe-action": "^8.1.10",
     "nuqs": "^2.8.9",
     "openai": "^6.33.0",

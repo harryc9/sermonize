@@ -34,14 +34,29 @@ export async function POST(
     .update({ status: 'pending', error: null })
     .eq('id', id)
 
-  await inngest.send({
-    name: 'sermon/transcribe',
-    data: {
-      sermon_id: sermon.id,
-      youtube_id: sermon.youtube_id,
-      youtube_url: sermon.youtube_url,
-    },
-  })
+  try {
+    await inngest.send({
+      name: 'sermon/transcribe',
+      data: {
+        sermon_id: sermon.id,
+        youtube_id: sermon.youtube_id,
+        youtube_url: sermon.youtube_url,
+      },
+    })
+  } catch (sendErr) {
+    console.error('[sermons/retry] Inngest send failed', sendErr)
+    await supabaseServer
+      .from('sermons')
+      .update({
+        status: 'error',
+        error: 'Failed to start processing. Please try again.',
+      })
+      .eq('id', id)
+    return NextResponse.json(
+      { error: 'Failed to start processing. Please try again.' },
+      { status: 500 },
+    )
+  }
 
   return NextResponse.json({ success: true })
 }
