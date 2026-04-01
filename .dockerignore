@@ -1,0 +1,24 @@
+# Skill directories (conflict with Railpack/BuildKit cache)
+.agents/
+.claude/
+.cursor/
+
+# Documentation
+docs/
+todo.md
+
+# Testing
+/coverage
+/test-results/
+
+# Supabase local
+/supabase
+
+# Misc
+.DS_Store
+*.pem
+.vscode/
+.env*
+!.env.project
+!.env.vault
+node_modules/

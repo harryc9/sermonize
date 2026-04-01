@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { DM_Sans, Lora } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { Providers } from '@/components/providers'
-import { Sidebar } from '@/components/sidebar'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -19,8 +18,44 @@ const lora = Lora({
 })
 
 export const metadata: Metadata = {
-  title: 'Sermonize',
-  description: 'Talk to any sermon. Paste a YouTube URL and chat about the details.',
+  title: {
+    default: 'Sermonize — Talk to any sermon',
+    template: '%s | Sermonize',
+  },
+  description:
+    'Paste a YouTube sermon URL and chat about the details — quotes, verses, themes, and timestamps.',
+  metadataBase: new URL('https://sermonize.app'),
+  keywords: [
+    'sermon',
+    'bible',
+    'chat',
+    'ai',
+    'youtube',
+    'transcript',
+    'preaching',
+    'church',
+    'scripture',
+  ],
+  authors: [{ name: 'Sermonize' }],
+  creator: 'Sermonize',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'Sermonize',
+    title: 'Sermonize — Talk to any sermon',
+    description:
+      'Paste a YouTube sermon URL and chat about the details — quotes, verses, themes, and timestamps.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Sermonize — Talk to any sermon',
+    description:
+      'Paste a YouTube sermon URL and chat about the details — quotes, verses, themes, and timestamps.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({
@@ -32,12 +67,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${dmSans.variable} ${lora.variable} font-sans antialiased`}>
         <Providers>
-          <div className="flex h-dvh">
-            <Sidebar />
-            <main className="flex flex-1 flex-col overflow-hidden">
-              {children}
-            </main>
-          </div>
+          {children}
         </Providers>
         <Toaster position="top-center" />
       </body>

@@ -82,6 +82,8 @@ export async function downloadAudio(
     '--no-playlist',
     '--no-warnings',
     '--newline',
+    '--concurrent-fragments', '5',
+    '--extractor-args', 'youtube:player_client=ios,web',
   ]
 
   if (startSec != null && endSec != null) {

@@ -2,6 +2,7 @@
  * /s/[id] — Sermon page. Shows processing progress, chat, or error
  * depending on the sermon's current status.
  */
+import type { Metadata } from 'next'
 import { supabaseServer } from '@/lib/supabase.server'
 import type { SermonNotes } from '@/types/sermon-notes'
 import { notFound } from 'next/navigation'
@@ -10,6 +11,37 @@ import { SermonProcessingView } from './sermon-processing-view'
 
 type Props = {
   params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const { data } = await supabaseServer
+    .from('sermons')
+    .select('title, youtube_id')
+    .eq('id', id)
+    .single()
+
+  if (!data) return { title: 'Sermon not found' }
+
+  const title = data.title ?? 'Sermon'
+  const description = `Chat with "${title}" — ask about quotes, verses, themes, and timestamps.`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} | Sermonize`,
+      description,
+      ...(data.youtube_id && {
+        images: [`https://img.youtube.com/vi/${data.youtube_id}/hqdefault.jpg`],
+      }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | Sermonize`,
+      description,
+    },
+  }
 }
 
 export default async function SermonPage({ params }: Props) {

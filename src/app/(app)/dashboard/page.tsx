@@ -1,28 +1,25 @@
+/**
+ * Dashboard — sermon URL input and time range selection.
+ * Auth guard handled by the (app) layout.
+ */
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { SermonInput } from '@/components/sermon-input'
-import { TimeRangeSelector } from '@/components/time-range-selector'
 import { useInvalidateSermonList } from '@/components/sidebar'
-import { useAuth } from '@/context/auth-provider'
+import { TimeRangeSelector } from '@/components/time-range-selector'
 import { authenticatedFetch } from '@/lib/api-client'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 type AppState =
   | { step: 'input' }
   | { step: 'time_select'; url: string; youtubeId: string }
 
-export default function Home() {
+export default function DashboardPage() {
   const [state, setState] = useState<AppState>({ step: 'input' })
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const invalidateSermonList = useInvalidateSermonList()
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
-
-  if (!authLoading && !isAuthenticated) {
-    router.replace('/auth')
-    return null
-  }
 
   async function startTranscription(url: string, youtubeId: string, startMs?: number, endMs?: number) {
     setError(null)

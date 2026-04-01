@@ -22,6 +22,9 @@
     },
     "stripe": {
       "url": "https://mcp.stripe.com"
+    },
+    "betterstack": {
+      "url": "https://mcp.betterstack.com"
     }
   }
 }
