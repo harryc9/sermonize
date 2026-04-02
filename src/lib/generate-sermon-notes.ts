@@ -20,9 +20,11 @@ ${formattedTranscript}
 Rules:
 - summary: Write a 2-3 sentence overview capturing the main message and theme
 - highlights: Extract 5-10 key moments (powerful quotes, main points, pivotal arguments). Use the EXACT timestamp from the transcript in [M:SS] or [H:MM:SS] format. Set offset to the timestamp converted to total seconds.
-- verses: List every Bible verse reference mentioned (e.g. "John 3:16"). If none are mentioned, return an empty array.
+- verses: List only Bible verse references that include a specific verse number (e.g. "John 3:16", "Mark 11:1-21"). Exclude broad chapter references like "1 Kings 1" or "John 14" with no verse number. If none, return an empty array.
 - Quote the speaker's exact words for highlights when possible
-- Order highlights chronologically by timestamp`,
+- Order highlights chronologically by timestamp
+- discussion_questions: Write 3-5 open-ended questions for small group discussion. Root them in the sermon's specific themes, illustrations, and Scripture — not generic Bible study questions.
+- prayer: Write a short closing prayer (3-5 sentences) drawn from the sermon's central message. Should feel like it came from this specific sermon, not a generic prayer.`,
   })
 
   if (!output) {

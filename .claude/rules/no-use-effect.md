@@ -1,7 +1,7 @@
 ---
-description: Ban useEffect — use declarative alternatives instead
-globs: "**/*.{ts,tsx}"
-alwaysApply: true
+paths:
+  - "**/*.ts"
+  - "**/*.tsx"
 ---
 
 # No useEffect
@@ -20,39 +20,36 @@ alwaysApply: true
 | DOM measurements / refs | `useLayoutEffect` only if truly needed (e.g., measuring before paint) |
 | Syncing with URL params | `nuqs` (`useQueryState` / `useQueryStates`) |
 | Form state | Controlled inputs or `react-hook-form` |
-| Timers / intervals | Custom hook wrapping `useRef` for cleanup, never raw `useEffect` |
 | Event listeners (window, document) | Dedicated custom hook (e.g., `useEventListener`) |
 
 ## Examples
 
 ```tsx
-// ❌ BAD — useEffect for data fetching
+// ❌ BAD
 useEffect(() => {
   fetch('/api/data').then(res => res.json()).then(setData)
 }, [])
 
-// ✅ GOOD — React Query
+// ✅ GOOD
 const { data } = useQuery({ queryKey: ['data'], queryFn: fetchData })
 ```
 
 ```tsx
-// ❌ BAD — useEffect to sync derived state
+// ❌ BAD
 const [fullName, setFullName] = useState('')
-useEffect(() => {
-  setFullName(`${firstName} ${lastName}`)
-}, [firstName, lastName])
+useEffect(() => { setFullName(`${firstName} ${lastName}`) }, [firstName, lastName])
 
-// ✅ GOOD — compute during render
+// ✅ GOOD
 const fullName = `${firstName} ${lastName}`
 ```
 
 ```tsx
-// ❌ BAD — useEffect to respond to state change
+// ❌ BAD
 useEffect(() => {
   if (status === 'success') navigate('/dashboard')
 }, [status])
 
-// ✅ GOOD — handle in the event/callback that caused the change
+// ✅ GOOD
 const handleSubmit = async () => {
   const result = await submitForm()
   if (result.success) navigate('/dashboard')

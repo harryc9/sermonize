@@ -11,12 +11,7 @@
  * - Vercel handles: future short-lived functions
  */
 
-import dotenv from 'dotenv'
 import { DateTime } from 'luxon'
-import path from 'node:path'
-
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
-dotenv.config({ path: path.resolve(process.cwd(), '.env') })
 
 async function main() {
   const { default: express } = await import('express')

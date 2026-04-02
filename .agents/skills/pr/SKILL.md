@@ -1,17 +1,24 @@
 ---
 name: pr
-model: inherit
-description: Full PR submission workflow. Cleans up branch, commits, pushes, and creates GitHub PR with Bugbot review. Use when ready to submit a PR.
+description: >-
+  Full PR submission workflow. Cleans up branch, commits, pushes, and creates
+  GitHub PR. Use when the user says "submit PR", "create PR", "open PR", "push PR",
+  "/pr", or is ready to submit their current branch as a pull request.
 ---
 
 You are a PR submission agent for a Next.js 15 App Router application (UBILD) with Supabase, React Query, and TypeScript.
 
-Your job is to clean up the branch, then create a GitHub PR. Follow each phase in order.
+Your job is to commit any pending work, clean up the branch, sync with main, and create or update a GitHub PR. Follow each phase in order — always run all phases regardless of whether a PR already exists.
 
 ## Phase 0: Pre-flight Check
 
-1. Run `gh pr list --head $(git branch --show-current) --state open` to check if a PR already exists for this branch.
-2. If a PR already exists, note the URL but **continue** with Phase 0.5, Phase 1 (cleanup), and then skip to pushing the branch. Do not run `gh pr create` — the PR already exists and will be updated automatically when you push.
+1. Run `git status` to check for uncommitted changes (modified, new, deleted files).
+2. If there are uncommitted changes:
+   a. Stage everything: `git add -A`
+   b. Commit with a descriptive message based on what changed (use conventional commit format, e.g. `feat: add google reviews integration`)
+   c. If you cannot determine a good commit message from the diff, use `chore: wip`
+3. Run `gh pr list --head $(git branch --show-current) --state open` to check if a PR already exists.
+4. Note the existing PR URL if found — you will update it (not recreate it) at the end.
 
 ## Phase 0.5: Sync with Main
 
@@ -30,10 +37,10 @@ Your job is to clean up the branch, then create a GitHub PR. Follow each phase i
 
 ## Phase 1: Cleanup
 
-1. Run `git diff main...HEAD` to see all changes on the branch
+1. Run `git diff main...HEAD` to see **all** changes on the branch (including what was just committed in Phase 0)
 2. Review every modified/added file systematically
 3. Clean up issues found using the checklist below
-4. If any changes were made, stage and commit them: `git add -A && git commit -m "chore: pr cleanup"`
+4. If any changes were made during cleanup, stage and commit them: `git add -A && git commit -m "chore: pr cleanup"`
 
 ### Must Fix
 - Remove `console.log` and debug statements
@@ -58,7 +65,7 @@ Your job is to clean up the branch, then create a GitHub PR. Follow each phase i
 - Migrations are properly named and sequenced
 - No duplicate functionality across files
 
-## Phase 2: Create PR
+## Phase 2: Create or Update PR
 
 1. Determine the true base for this branch using this logic (run in order, stop at first result):
 
@@ -83,8 +90,11 @@ Your job is to clean up the branch, then create a GitHub PR. Follow each phase i
 2. Review the actual diff of the new commits: `git show` each commit if needed to understand what changed.
 3. Derive the PR title from the branch name and the new commits only. Use conventional commit format (e.g., branch `feat/assessments2` becomes `feat: assessments v2`)
 4. Push the branch: `git push -u origin HEAD`
-5. If a PR already existed (found in Phase 0), skip PR creation — the push in step 4 updates it automatically. Report the existing PR URL and stop.
-6. Otherwise, create the PR with `gh pr create`. Use a HEREDOC for the body:
+5. **If a PR already existed** (found in Phase 0):
+   - The push in step 4 updates it automatically.
+   - Run `gh pr edit <PR-number> --title "<new title>" --body "$(cat <<'EOF' ... EOF)"` to refresh the title and description to match the current state of the branch.
+   - Report the existing PR URL.
+6. **If no PR existed**, create one with `gh pr create`. Use a HEREDOC for the body:
 
 ```
 gh pr create --title "<title>" --body "$(cat <<'EOF'
