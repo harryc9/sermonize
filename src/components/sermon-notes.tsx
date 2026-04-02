@@ -107,6 +107,27 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
               </div>
             </div>
           )}
+
+          {notes.discussion_questions && notes.discussion_questions.length > 0 && (
+            <div className="mt-8">
+              <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Discussion Questions</h4>
+              <ol className="mt-3 space-y-2.5">
+                {notes.discussion_questions.map((q, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-gray-700">
+                    <span className="mt-0.5 shrink-0 font-serif text-xs font-semibold text-gray-300">{i + 1}.</span>
+                    <span>{q}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {notes.prayer && (
+            <div className="mt-8">
+              <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Prayer</h4>
+              <p className="mt-3 text-[13px] italic leading-relaxed text-gray-500">{notes.prayer}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

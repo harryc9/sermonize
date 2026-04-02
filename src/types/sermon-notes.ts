@@ -17,7 +17,14 @@ export const sermonNotesSchema = z.object({
     .describe('5-10 key highlights from the sermon with timestamps'),
   verses: z
     .array(z.string())
-    .describe('Bible verse references mentioned in the sermon, e.g. "John 3:16"'),
+    .transform((refs) => refs.filter((r) => r.includes(':')))
+    .describe('Bible verse references with specific verse numbers only, e.g. "John 3:16" or "Mark 11:1-21" — never broad chapters like "1 Kings 1"'),
+  discussion_questions: z
+    .array(z.string())
+    .describe('3-5 open-ended discussion questions for small group conversation, grounded in the sermon themes and Scripture referenced'),
+  prayer: z
+    .string()
+    .describe('A short closing prayer (3-5 sentences) that reflects the sermon central message and invites personal application'),
 })
 
 export type SermonNotes = z.infer<typeof sermonNotesSchema>

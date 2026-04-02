@@ -6,6 +6,11 @@ paths:
 
 # Supabase Conventions
 
+## Project
+
+- **Project ID:** `ianwczkdgcllsijnsmgz`
+- Use this ID when referencing the project in MCP tools (e.g., `project_id: "ianwczkdgcllsijnsmgz"`)
+
 ## Schema Changes
 
 - **Do not** add SQL files under `supabase/migrations/` unless the user explicitly asks for a tracked migration
