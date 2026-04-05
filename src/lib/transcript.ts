@@ -34,3 +34,9 @@ export function formatTranscriptForPrompt(segments: TranscriptSegment[]): string
     .map((s) => `[${formatTimestamp(s.offset)}] ${s.text}`)
     .join('\n')
 }
+
+export function formatPdfForPrompt(segments: TranscriptSegment[]): string {
+  return segments
+    .map((s) => `[Page ${s.offset}] ${s.text}`)
+    .join('\n\n')
+}

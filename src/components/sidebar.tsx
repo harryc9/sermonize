@@ -7,7 +7,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DateTime } from 'luxon'
-import { Plus, Menu, X, LogOut, Loader2, RotateCw } from 'lucide-react'
+import { Plus, Menu, X, LogOut, Loader2, RotateCw, FileText, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -19,7 +19,10 @@ const STUCK_THRESHOLD_MINUTES = 45
 type SermonListItem = {
   id: string
   title: string | null
-  youtube_id: string
+  youtube_id: string | null
+  pdf_url: string | null
+  pdf_thumbnail_url: string | null
+  thumbnail_url?: string
   status: string
   processing_step: string | null
   created_at: string
@@ -28,6 +31,8 @@ type SermonListItem = {
 const STEP_LABELS: Record<string, string> = {
   downloading: 'Downloading audio…',
   transcribing: 'Transcribing…',
+  extracting: 'Extracting text…',
+  generating_notes: 'Generating notes…',
   saving: 'Saving…',
 }
 
@@ -45,9 +50,9 @@ function groupSermonsByDate(sermons: SermonListItem[]): DateGroup[] {
     let label: string
     if (diff < 1) label = 'Today'
     else if (diff < 2) label = 'Yesterday'
-    else if (diff < 7) label = 'Last 7 days'
-    else if (diff < 30) label = 'Last 30 days'
-    else label = dt.toFormat('MMMM yyyy')
+    else if (diff < 7) label = dt.toFormat('cccc') // Monday, Tuesday, ...
+    else if (diff < 30) label = dt.toFormat('MMM d') // Apr 1, Mar 28, ...
+    else label = dt.toFormat('MMMM yyyy') // March 2026
 
     if (!buckets[label]) {
       buckets[label] = []
@@ -131,6 +136,32 @@ export function Sidebar() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: async (sermonId: string) => {
+      const res = await authenticatedFetch(`/api/sermons/${sermonId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+      return sermonId
+    },
+    onMutate: async (sermonId) => {
+      await queryClient.cancelQueries({ queryKey: getSermonListQueryKey() })
+      const previous = queryClient.getQueryData<SermonListItem[]>(getSermonListQueryKey())
+      queryClient.setQueryData<SermonListItem[]>(
+        getSermonListQueryKey(),
+        (old) => old?.filter((s) => s.id !== sermonId) ?? [],
+      )
+      return { previous }
+    },
+    onError: (_err, _sermonId, context) => {
+      if (context?.previous)
+        queryClient.setQueryData(getSermonListQueryKey(), context.previous)
+      toast.error('Failed to delete sermon')
+    },
+    onSuccess: (sermonId) => {
+      if (activeId === sermonId) router.push('/dashboard')
+      queryClient.invalidateQueries({ queryKey: getSermonListQueryKey() })
+    },
+  })
+
   function handleNavigate(path: string) {
     router.push(path)
     setIsOpen(false)
@@ -166,7 +197,7 @@ export function Sidebar() {
             variant="ghost"
             size="icon"
             onClick={() => handleNavigate('/dashboard')}
-            title="New sermon"
+            title="New study"
           >
             <Plus size={18} />
           </Button>
@@ -175,7 +206,7 @@ export function Sidebar() {
         <nav className="flex-1 overflow-y-auto p-2">
           {!sermonsLoading && sermons.filter((s) => s.status !== 'error').length === 0 && (
             <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-              No sermons yet
+              No studies yet
             </p>
           )}
           {groupSermonsByDate(sermons.filter((s) => s.status !== 'error')).map((group) => (
@@ -199,23 +230,47 @@ export function Sidebar() {
                   : null
 
                 return (
-                  <button
+                  <div
                     key={sermon.id}
-                    onClick={() => handleNavigate(`/s/${sermon.id}`)}
                     className={cn(
-                      'flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-gray-100',
+                      'group relative flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-gray-100',
                       activeId === sermon.id && 'bg-gray-100',
                     )}
                   >
+                  <button
+                    className="absolute inset-0 rounded-lg"
+                    onClick={() => handleNavigate(`/s/${sermon.id}`)}
+                    aria-label={sermon.title ?? 'Open sermon'}
+                  />
                     <div className="relative mt-0.5 shrink-0">
-                      <img
-                        src={`https://img.youtube.com/vi/${sermon.youtube_id}/mqdefault.jpg`}
-                        alt=""
-                        className={cn(
-                          'h-7 w-12 rounded object-cover',
-                          isTranscribing && 'opacity-40',
-                        )}
-                      />
+                      {sermon.youtube_id ? (
+                        <img
+                          src={`https://img.youtube.com/vi/${sermon.youtube_id}/mqdefault.jpg`}
+                          alt=""
+                          className={cn(
+                            'h-7 w-12 rounded object-cover',
+                            isTranscribing && 'opacity-40',
+                          )}
+                        />
+                      ) : sermon.thumbnail_url ? (
+                        <img
+                          src={sermon.thumbnail_url}
+                          alt=""
+                          className={cn(
+                            'h-7 w-12 rounded object-cover',
+                            isTranscribing && 'opacity-40',
+                          )}
+                        />
+                      ) : (
+                        <div
+                          className={cn(
+                            'flex h-7 w-12 items-center justify-center rounded bg-gray-100',
+                            isTranscribing && 'opacity-40',
+                          )}
+                        >
+                          <FileText size={14} className="text-gray-400" />
+                        </div>
+                      )}
                       {isTranscribing && (
                         <Loader2
                           size={14}
@@ -249,7 +304,17 @@ export function Sidebar() {
                         </p>
                       )}
                     </div>
-                  </button>
+                    <button
+                      className="relative z-10 ml-auto self-center rounded p-1 opacity-0 transition-opacity duration-150 hover:text-red-500 group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteMutation.mutate(sermon.id)
+                      }}
+                      aria-label="Delete sermon"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 )
               })}
             </div>

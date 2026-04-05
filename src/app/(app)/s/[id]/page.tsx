@@ -4,6 +4,8 @@
  */
 import type { Metadata } from 'next'
 import { supabaseServer } from '@/lib/supabase.server'
+import { downloadFromR2, getDownloadUrl, uploadToR2 } from '@/lib/r2'
+import { generatePdfThumbnail } from '@/lib/pdf'
 import type { SermonNotes } from '@/types/sermon-notes'
 import { notFound } from 'next/navigation'
 import { SermonChatClient } from './sermon-chat-client'
@@ -49,7 +51,7 @@ export default async function SermonPage({ params }: Props) {
 
   const sermonResult = await supabaseServer
     .from('sermons')
-    .select('id, title, youtube_id, status, processing_step, notes')
+    .select('id, title, youtube_id, source_type, pdf_url, pdf_thumbnail_url, user_id, status, processing_step, notes')
     .eq('id', id)
     .single()
 
@@ -67,11 +69,33 @@ export default async function SermonPage({ params }: Props) {
     .eq('sermon_id', id)
     .order('created_at', { ascending: true })
 
+  let pdfSignedUrl: string | undefined
+  if (sermon.source_type === 'pdf' && sermon.pdf_url) {
+    pdfSignedUrl = await getDownloadUrl(sermon.pdf_url)
+
+    // Lazily generate thumbnail for PDFs uploaded before this feature
+    if (!sermon.pdf_thumbnail_url) {
+      try {
+        const pdfBuffer = await downloadFromR2(sermon.pdf_url)
+        const jpegBuffer = await generatePdfThumbnail(pdfBuffer.buffer as ArrayBuffer)
+        const thumbnailKey = `thumbnails/${sermon.user_id}/${id}.jpg`
+        await uploadToR2(thumbnailKey, jpegBuffer, 'image/jpeg')
+        await supabaseServer
+          .from('sermons')
+          .update({ pdf_thumbnail_url: thumbnailKey })
+          .eq('id', id)
+      } catch {
+        // Non-fatal — thumbnail will be generated on next visit
+      }
+    }
+  }
+
   return (
     <SermonChatClient
       sermon={sermon}
       initialMessages={messagesResult.data ?? []}
       notes={(sermon.notes as SermonNotes) ?? null}
+      pdfSignedUrl={pdfSignedUrl}
     />
   )
 }

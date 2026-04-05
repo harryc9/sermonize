@@ -1,80 +1,64 @@
 /**
  * Public landing page — product explainer with hero illustration and CTA.
  */
+'use client'
 import { BackgroundDecoration } from '@/components/landing/background-decoration'
-import { HeroIllustration } from '@/components/landing/hero-illustration'
+import { HeroVisual } from '@/components/landing/hero-visual'
 import { Button } from '@/components/ui/button'
-import { BookOpen, Clock, FileText, MessageSquare } from 'lucide-react'
+import { BookOpen, FileText, MessageSquare } from 'lucide-react'
+
 import Link from 'next/link'
 
 export default function LandingPage() {
   return (
-    <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-[#fafafa] px-6">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[#fafafa]">
       <BackgroundDecoration />
 
-      <div className="relative z-10 grid max-w-5xl items-center gap-12 md:grid-cols-2 md:gap-20">
+      {/* Top nav */}
+      <header className="relative z-10 px-10 py-6">
+        <span className="font-serif text-2xl font-semibold tracking-tight text-gray-900">
+          Sermonize
+        </span>
+      </header>
+
+      {/* Hero */}
+      <div className="relative z-10 flex flex-1 items-center justify-center px-6">
+      <div className="grid max-w-5xl w-full items-center gap-12 md:grid-cols-2 md:gap-20">
         <div className="space-y-10">
           <div className="space-y-4">
-            <span className="font-serif text-2xl font-semibold tracking-tight text-gray-900">
-              Sermonize
-            </span>
-            <h1 className="font-serif text-5xl font-semibold leading-[1.1] text-gray-900 sm:text-6xl">
-              Talk to any
-              <br />
-              sermon
+            <h1 className="font-serif leading-relaxed text-5xl font-semibold text-gray-900 sm:text-6xl">
+              Go deeper in the Bible
             </h1>
             <p className="text-lg leading-relaxed text-gray-400">
-              Paste a YouTube sermon and have a conversation about it — pull
-              exact quotes, find verses, explore themes, jump to timestamps.
+              Paste any sermon from YouTube and turn it into a personal study — notes, verses, and conversation, all in one place.
             </p>
           </div>
 
           <div className="space-y-5">
             <div className="flex items-start gap-4">
-              <FileText size={20} className="mt-0.5 shrink-0 text-gray-300" />
+              <FileText size={20} className="mt-0.5 shrink-0 text-orange-300" />
               <div>
-                <p className="font-medium text-gray-900">Sermon notes</p>
+                <p className="font-medium text-gray-900">Retain what you heard</p>
                 <p className="text-sm text-gray-400">
-                  Auto-generated structured notes with key points, scripture
-                  references, and takeaways
+                  Structured notes capture every key point, verse, and takeaway so nothing slips away
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <BookOpen size={20} className="mt-0.5 shrink-0 text-gray-300" />
+              <BookOpen size={20} className="mt-0.5 shrink-0 text-orange-300" />
               <div>
-                <p className="font-medium text-gray-900">
-                  Verse & quote lookup
-                </p>
+                <p className="font-medium text-gray-900">Find exactly what was said</p>
                 <p className="text-sm text-gray-400">
-                  Ask about any passage and get the exact transcript with
-                  context
+                  Pull any quote or passage word for word, with full context
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <MessageSquare
-                size={20}
-                className="mt-0.5 shrink-0 text-gray-300"
-              />
+              <MessageSquare size={20} className="mt-0.5 shrink-0 text-orange-300" />
               <div>
-                <p className="font-medium text-gray-900">
-                  Natural conversation
-                </p>
+                <p className="font-medium text-gray-900">Keep the conversation going</p>
                 <p className="text-sm text-gray-400">
-                  Chat freely — ask questions, request summaries, dig into
-                  themes
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <Clock size={20} className="mt-0.5 shrink-0 text-gray-300" />
-              <div>
-                <p className="font-medium text-gray-900">
-                  Timestamped references
-                </p>
-                <p className="text-sm text-gray-400">
-                  Every answer links back to the exact moment in the sermon
+                  Ask questions and dig into any theme or verse from the sermon
                 </p>
               </div>
             </div>
@@ -89,7 +73,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <HeroIllustration className="hidden w-full max-w-md justify-self-center md:block" />
+        <HeroVisual className="hidden w-full justify-self-center md:flex" />
+      </div>
       </div>
     </div>
   )

@@ -8,7 +8,7 @@
 import { authenticatedFetch } from '@/lib/api-client'
 import { buildVerseUrl } from '@/lib/bible-utils'
 import type { SermonNotes as SermonNotesType } from '@/types/sermon-notes'
-import { BookOpen, Loader2, RefreshCw, X } from 'lucide-react'
+import { BookOpen, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
 
@@ -18,9 +18,10 @@ type PanelProps = {
   onTimestampClick: (seconds: number) => void
   onClose: () => void
   player: ReactNode
+  sourceType?: string
 }
 
-export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, player }: PanelProps) {
+export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, player, sourceType }: PanelProps) {
   const [isRegenerating, setIsRegenerating] = useState(false)
   const router = useRouter()
 
@@ -37,9 +38,21 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
+      {/* Collapse tab — mirrors the expand tab on the chat side */}
+      <button
+        type="button"
+        onClick={onClose}
+        title="Close notes"
+        className="absolute left-0 top-1/2 z-10 hidden -translate-x-full -translate-y-1/2 items-center gap-1 rounded-l-lg border border-r-0 border-border bg-background px-1.5 py-3 text-gray-400 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 md:flex"
+      >
+        <ChevronRight size={14} />
+      </button>
+
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <h3 className="font-serif text-sm font-semibold">Sermon Notes</h3>
+        <h3 className="font-serif text-sm font-semibold">
+          {sourceType === 'pdf' ? 'Document Notes' : 'Sermon Notes'}
+        </h3>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -54,19 +67,12 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
               <RefreshCw size={14} />
             )}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
-          >
-            <X size={14} />
-          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="aspect-video w-full">{player}</div>
+      <div className="aspect-video w-full shrink-0">{player}</div>
 
+      <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-5">
           <p className="text-sm leading-relaxed text-gray-500">{notes.summary}</p>
 
@@ -92,7 +98,7 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
             <div className="mt-8">
               <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Verses Referenced</h4>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {notes.verses.map((verse) => (
+                {[...new Set(notes.verses)].map((verse) => (
                   <a
                     key={verse}
                     href={buildVerseUrl(verse)}

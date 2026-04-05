@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "chrome-devtools-cli": {
+      "source": "chromedevtools/chrome-devtools-mcp",
+      "sourceType": "github",
+      "computedHash": "1946d38596d9641a11401e1e5aa057191cb702cf552f81a1deddbfa735979673"
+    },
     "web-typography": {
       "source": "wondelai/skills",
       "sourceType": "github",

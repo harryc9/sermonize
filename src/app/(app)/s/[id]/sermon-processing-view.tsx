@@ -6,7 +6,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Download, AudioLines, Save, FileText, Check, Loader2, AlertCircle, RotateCw } from 'lucide-react'
+import { Download, AudioLines, Save, FileText, Check, Loader2, AlertCircle, RotateCw, ScanText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { authenticatedFetch } from '@/lib/api-client'
 import { useInvalidateSermonList } from '@/components/sidebar'
@@ -16,7 +16,8 @@ type Props = {
   sermon: {
     id: string
     title: string | null
-    youtube_id: string
+    youtube_id: string | null
+    source_type: string
     status: string
     processing_step: string | null
   }
@@ -30,17 +31,18 @@ type StatusResponse = {
   processing_step: string | null
 }
 
-const STEPS = [
+const YOUTUBE_STEPS = [
   { key: 'downloading', label: 'Downloading audio', icon: Download },
   { key: 'transcribing', label: 'Transcribing sermon', icon: AudioLines },
   { key: 'generating_notes', label: 'Generating notes', icon: FileText },
   { key: 'saving', label: 'Saving', icon: Save },
 ] as const
 
-function getStepIndex(step: string | null): number {
-  if (!step) return -1
-  return STEPS.findIndex((s) => s.key === step)
-}
+const PDF_STEPS = [
+  { key: 'extracting', label: 'Extracting text', icon: ScanText },
+  { key: 'generating_notes', label: 'Generating notes', icon: FileText },
+] as const
+
 
 export function SermonProcessingView({ sermon }: Props) {
   const router = useRouter()
@@ -71,20 +73,24 @@ export function SermonProcessingView({ sermon }: Props) {
     return null
   }
 
-  const activeIndex = getStepIndex(currentStep)
+  const isPdf = sermon.source_type === 'pdf'
+  const steps = isPdf ? PDF_STEPS : YOUTUBE_STEPS
+  const activeIndex = steps.findIndex((s) => s.key === currentStep)
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-12">
-      <div className="w-full max-w-lg">
-        <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 bg-black">
-          <iframe
-            src={`https://www.youtube.com/embed/${sermon.youtube_id}?rel=0&modestbranding=1`}
-            className="h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+      {!isPdf && sermon.youtube_id && (
+        <div className="w-full max-w-lg">
+          <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 bg-black">
+            <iframe
+              src={`https://www.youtube.com/embed/${sermon.youtube_id}?rel=0&modestbranding=1`}
+              className="h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="w-full max-w-sm space-y-6">
         {currentTitle && (
@@ -98,7 +104,7 @@ export function SermonProcessingView({ sermon }: Props) {
             <div className="flex items-center justify-center gap-2 text-destructive">
               <AlertCircle size={18} />
               <span className="text-sm font-medium">
-                {data?.error ?? 'Transcription failed'}
+                {data?.error ?? (isPdf ? 'Processing failed' : 'Transcription failed')}
               </span>
             </div>
             <Button
@@ -116,7 +122,7 @@ export function SermonProcessingView({ sermon }: Props) {
         ) : (
           <>
             <div className="space-y-3">
-              {STEPS.map((step, i) => {
+              {steps.map((step, i) => {
                 const isActive = i === activeIndex
                 const isComplete = i < activeIndex
                 const Icon = step.icon
@@ -155,7 +161,7 @@ export function SermonProcessingView({ sermon }: Props) {
             </div>
 
             <p className="text-center text-sm text-gray-400">
-              This may take a while for longer sermons.
+              {isPdf ? 'This may take a moment.' : 'This may take a while for longer sermons.'}
               <br />
               Feel free to close this page — we&apos;ll notify you when it&apos;s ready.
             </p>

@@ -8,9 +8,12 @@
 import { ChatInterface } from '@/components/chat-interface'
 import { SermonNotesPanel } from '@/components/sermon-notes'
 import { YouTubePlayer, type YouTubePlayerHandle } from '@/components/youtube-player'
+import { PdfViewer } from '@/components/pdf-viewer'
+import { useInvalidateSermonList } from '@/components/sidebar'
 import type { SermonNotes as SermonNotesType } from '@/types/sermon-notes'
 import type { UIMessage } from 'ai'
 import { useRef, useCallback, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { X, Minimize2, Maximize2, FileText, ChevronLeft } from 'lucide-react'
 
@@ -22,9 +25,10 @@ type DbMessage = {
 }
 
 type Props = {
-  sermon: { id: string; title: string | null; youtube_id: string }
+  sermon: { id: string; title: string | null; youtube_id: string | null; source_type: string }
   initialMessages: DbMessage[]
   notes: SermonNotesType | null
+  pdfSignedUrl?: string
 }
 
 function toUIMessages(dbMessages: DbMessage[]): UIMessage[] {
@@ -35,22 +39,35 @@ function toUIMessages(dbMessages: DbMessage[]): UIMessage[] {
   }))
 }
 
-export function SermonChatClient({ sermon, initialMessages, notes }: Props) {
+export function SermonChatClient({ sermon, initialMessages, notes, pdfSignedUrl }: Props) {
   const messages = toUIMessages(initialMessages)
+  const isPdf = sermon.source_type === 'pdf'
   const playerRef = useRef<YouTubePlayerHandle>(null)
+  const invalidateSermonList = useInvalidateSermonList()
+
+  // When visiting a PDF sermon, invalidate the sidebar so lazily-generated thumbnails appear.
+  // staleTime: Infinity ensures this runs exactly once per sermon page mount.
+  useQuery({
+    queryKey: ['pdf-sidebar-sync', sermon.id],
+    queryFn: async () => { invalidateSermonList(); return null },
+    enabled: isPdf,
+    staleTime: Infinity,
+    gcTime: 0,
+  })
   const [isNotesOpen, setIsNotesOpen] = useState(!!notes)
   const [isPipVisible, setIsPipVisible] = useState(true)
   const [isPipMinimized, setIsPipMinimized] = useState(false)
 
   const handleTimestampClick = useCallback((seconds: number) => {
+    if (isPdf) return
     if (!isNotesOpen) {
       setIsPipVisible(true)
       setIsPipMinimized(false)
     }
     playerRef.current?.seekTo(seconds)
-  }, [isNotesOpen])
+  }, [isPdf, isNotesOpen])
 
-  const showPip = !isNotesOpen && isPipVisible
+  const showPip = !isPdf && !isNotesOpen && isPipVisible
 
   return (
     <div className="flex h-full">
@@ -82,11 +99,16 @@ export function SermonChatClient({ sermon, initialMessages, notes }: Props) {
             notes={notes}
             onTimestampClick={handleTimestampClick}
             onClose={() => setIsNotesOpen(false)}
+            sourceType={sermon.source_type}
             player={
-              <YouTubePlayer
-                ref={playerRef}
-                youtubeId={sermon.youtube_id}
-              />
+              isPdf && pdfSignedUrl ? (
+                <PdfViewer url={pdfSignedUrl} />
+              ) : sermon.youtube_id ? (
+                <YouTubePlayer
+                  ref={playerRef}
+                  youtubeId={sermon.youtube_id}
+                />
+              ) : null
             }
           />
         </div>
@@ -122,7 +144,7 @@ export function SermonChatClient({ sermon, initialMessages, notes }: Props) {
               </Button>
             </div>
           </div>
-          {!isPipMinimized && (
+          {!isPipMinimized && sermon.youtube_id && (
             <YouTubePlayer
               ref={playerRef}
               youtubeId={sermon.youtube_id}
