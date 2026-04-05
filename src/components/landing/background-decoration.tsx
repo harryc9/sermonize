@@ -45,11 +45,6 @@ export function BackgroundDecoration() {
         <line x1="0" y1="140" x2="140" y2="0" stroke="#f3f4f6" strokeWidth="0.5" />
       </svg>
 
-      {/* Small orange dot — mid-left area */}
-      <div
-        className="absolute left-[12%] top-[30%] h-2 w-2 rounded-full opacity-30"
-        style={{ backgroundColor: 'hsl(24.6, 95%, 53.1%)' }}
-      />
     </div>
   )
 }

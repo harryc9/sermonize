@@ -36,12 +36,12 @@ export function SermonInput({ onValidUrl }: SermonInputProps) {
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste a YouTube sermon URL..."
+            placeholder="Paste a YouTube URL..."
             className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
         <Button type="submit" disabled={!url.trim()} className="rounded-lg px-6">
-          Load Sermon
+          Start Studying
         </Button>
       </form>
       {error && <p className="text-sm text-destructive">{error}</p>}

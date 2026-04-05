@@ -49,78 +49,84 @@ export type Database = {
           },
         ]
       }
-      monitored_projects: {
+      platform_cache: {
         Row: {
-          created_at: string
-          failure_threshold_pct: number
-          id: string
-          is_active: boolean
-          name: string
-          service_role_key: string
-          slack_webhook_url: string | null
-          supabase_url: string
+          key: string
+          updated_at: string
+          value: Json
         }
         Insert: {
-          created_at?: string
-          failure_threshold_pct?: number
-          id?: string
-          is_active?: boolean
-          name: string
-          service_role_key: string
-          slack_webhook_url?: string | null
-          supabase_url: string
+          key: string
+          updated_at?: string
+          value: Json
         }
         Update: {
-          created_at?: string
-          failure_threshold_pct?: number
-          id?: string
-          is_active?: boolean
-          name?: string
-          service_role_key?: string
-          slack_webhook_url?: string | null
-          supabase_url?: string
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
       sermons: {
         Row: {
           created_at: string
+          end_ms: number | null
           error: string | null
+          hidden_at: string | null
           id: string
           notes: Json | null
+          pdf_filename: string | null
+          pdf_thumbnail_url: string | null
+          pdf_url: string | null
           processing_step: string | null
+          source_type: string
+          start_ms: number | null
           status: string
           title: string | null
           transcript: Json
           user_id: string
-          youtube_id: string
-          youtube_url: string
+          youtube_id: string | null
+          youtube_url: string | null
         }
         Insert: {
           created_at?: string
+          end_ms?: number | null
           error?: string | null
+          hidden_at?: string | null
           id?: string
           notes?: Json | null
+          pdf_filename?: string | null
+          pdf_thumbnail_url?: string | null
+          pdf_url?: string | null
           processing_step?: string | null
+          source_type?: string
+          start_ms?: number | null
           status?: string
           title?: string | null
           transcript?: Json
           user_id: string
-          youtube_id: string
-          youtube_url: string
+          youtube_id?: string | null
+          youtube_url?: string | null
         }
         Update: {
           created_at?: string
+          end_ms?: number | null
           error?: string | null
+          hidden_at?: string | null
           id?: string
           notes?: Json | null
+          pdf_filename?: string | null
+          pdf_thumbnail_url?: string | null
+          pdf_url?: string | null
           processing_step?: string | null
+          source_type?: string
+          start_ms?: number | null
           status?: string
           title?: string | null
           transcript?: Json
           user_id?: string
-          youtube_id?: string
-          youtube_url?: string
+          youtube_id?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

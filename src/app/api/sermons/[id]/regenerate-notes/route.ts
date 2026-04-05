@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/api-auth'
 import { supabaseServer } from '@/lib/supabase.server'
 import { generateSermonNotes } from '@/lib/generate-sermon-notes'
-import { formatTranscriptForPrompt } from '@/lib/transcript'
+import { formatTranscriptForPrompt, formatPdfForPrompt } from '@/lib/transcript'
 import type { TranscriptSegment } from '@/types'
 
 export async function POST(
@@ -20,7 +20,7 @@ export async function POST(
 
   const { data: sermon, error } = await supabaseServer
     .from('sermons')
-    .select('id, transcript, status, user_id')
+    .select('id, transcript, status, source_type, user_id')
     .eq('id', id)
     .eq('user_id', auth.userId)
     .single()
@@ -35,8 +35,11 @@ export async function POST(
   if (!segments?.length)
     return NextResponse.json({ error: 'No transcript available' }, { status: 400 })
 
-  const formattedTranscript = formatTranscriptForPrompt(segments)
-  const notes = await generateSermonNotes(formattedTranscript)
+  const isPdf = sermon.source_type === 'pdf'
+  const formattedTranscript = isPdf
+    ? formatPdfForPrompt(segments)
+    : formatTranscriptForPrompt(segments)
+  const notes = await generateSermonNotes(formattedTranscript, isPdf ? 'pdf' : 'youtube')
 
   await supabaseServer
     .from('sermons')

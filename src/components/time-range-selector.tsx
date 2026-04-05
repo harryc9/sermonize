@@ -2,18 +2,19 @@
 
 import { useCallback, useRef, useState } from 'react'
 import YouTube, { type YouTubeEvent, type YouTubePlayer } from 'react-youtube'
+import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatTimestamp } from '@/lib/transcript'
 
 type TimeRangeSelectorProps = {
   youtubeId: string
   onConfirm: (startMs: number, endMs: number) => void
-  onSkip: () => void
+  onBack: () => void
 }
 
 const MIN_RANGE_MS = 30_000
 
-export function TimeRangeSelector({ youtubeId, onConfirm, onSkip }: TimeRangeSelectorProps) {
+export function TimeRangeSelector({ youtubeId, onConfirm, onBack }: TimeRangeSelectorProps) {
   const playerRef = useRef<YouTubePlayer | null>(null)
   const [durationMs, setDurationMs] = useState(0)
   const [startMs, setStartMs] = useState(0)
@@ -88,7 +89,7 @@ export function TimeRangeSelector({ youtubeId, onConfirm, onSkip }: TimeRangeSel
           Select sermon portion
         </h2>
         <p className="mt-1 text-sm text-gray-400">
-          Drag the handles to isolate the sermon section, or use the full video
+          Drag the handles to isolate the sermon section
         </p>
       </div>
 
@@ -159,10 +160,11 @@ export function TimeRangeSelector({ youtubeId, onConfirm, onSkip }: TimeRangeSel
           <div className="flex items-center justify-center gap-3 pt-2">
             <Button
               variant="ghost"
-              onClick={onSkip}
+              onClick={onBack}
               className="text-gray-400 hover:text-gray-900"
             >
-              Use full video
+              <ArrowLeft className="h-4 w-4" />
+              Back
             </Button>
             <Button
               onClick={() => onConfirm(startMs, endMs)}

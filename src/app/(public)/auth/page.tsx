@@ -79,7 +79,7 @@ export default function AuthPage() {
           </h2>
           <p className="text-sm text-gray-400">
             {isSignUp
-              ? 'Start exploring sermons in minutes'
+              ? 'Start your first study in minutes'
               : 'Sign in to continue'}
           </p>
         </div>

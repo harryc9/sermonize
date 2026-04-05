@@ -4,6 +4,7 @@
  */
 'use client'
 
+import { RecommendedSermons } from '@/components/recommended-sermons'
 import { SermonInput } from '@/components/sermon-input'
 import { useInvalidateSermonList } from '@/components/sidebar'
 import { TimeRangeSelector } from '@/components/time-range-selector'
@@ -46,17 +47,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-hidden">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-y-auto">
       {state.step === 'input' && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-12">
           <div className="text-center">
             <h2 className="font-serif text-3xl font-semibold tracking-tight">
-              Talk to any sermon
+              Go deeper in your Bible study
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Paste a YouTube URL and chat about the details — quotes, verses, themes, and timestamps.
+              Paste any sermon, podcast, or teaching and start a Bible study.
             </p>
           </div>
+
           <div className="relative w-full max-w-lg">
             <SermonInput
               onValidUrl={({ url, youtubeId }) =>
@@ -64,6 +66,14 @@ export default function DashboardPage() {
               }
             />
           </div>
+
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+
+          <RecommendedSermons
+            onSelect={({ url, youtubeId }) => setState({ step: 'time_select', url, youtubeId })}
+          />
         </div>
       )}
 
@@ -74,9 +84,7 @@ export default function DashboardPage() {
             onConfirm={(startMs, endMs) =>
               startTranscription(state.url, state.youtubeId, startMs, endMs)
             }
-            onSkip={() =>
-              startTranscription(state.url, state.youtubeId)
-            }
+            onBack={() => setState({ step: 'input' })}
           />
           {error && (
             <p className="mt-4 text-sm text-destructive">{error}</p>

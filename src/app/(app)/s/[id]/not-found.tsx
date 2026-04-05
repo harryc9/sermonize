@@ -13,7 +13,7 @@ export default function SermonNotFound() {
           Sermon not found
         </h2>
         <p className="mt-2 max-w-sm text-muted-foreground">
-          This sermon doesn&apos;t exist or is still being transcribed. Try again in a moment.
+          This study doesn&apos;t exist or is still being prepared. Try again in a moment.
         </p>
       </div>
       <Link href="/dashboard">

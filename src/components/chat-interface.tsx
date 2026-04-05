@@ -44,7 +44,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
       parts: [
         {
           type: 'text',
-          text: `I've loaded the sermon${sermonTitle ? ` "${sermonTitle}"` : ''}. Ask me anything — I can find specific quotes, Bible verses, key themes, timestamps, or give you a summary.`,
+          text: `I've loaded${sermonTitle ? ` "${sermonTitle}"` : ' this'}. Ask me anything — find exact quotes, look up Bible verses, explore themes, or jump to any moment.`,
         },
       ],
     }),
@@ -287,7 +287,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
                 handleSubmit(e)
               }
             }}
-            placeholder="Ask about the sermon..."
+            placeholder="Ask anything..."
             className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             rows={1}
             disabled={isLoading}

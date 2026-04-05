@@ -18,6 +18,7 @@ async function main() {
   const { serve } = await import('inngest/express')
   const { inngest } = await import('./client')
   const { transcribeSermon } = await import('./functions/transcribe-sermon')
+  const { processPdfSermon } = await import('./functions/process-pdf-sermon')
 
   const app = express()
   const port = process.env.PORT || 3001
@@ -47,7 +48,7 @@ async function main() {
     '/api/inngest',
     serve({
       client: inngest,
-      functions: [transcribeSermon],
+      functions: [transcribeSermon, processPdfSermon],
     }),
   )
 
@@ -56,7 +57,7 @@ async function main() {
     console.log(`[Worker] Environment: ${process.env.NODE_ENV}`)
     console.log(`[Worker] Health check: http://localhost:${port}/health`)
     console.log(`[Worker] Inngest endpoint: http://localhost:${port}/api/inngest`)
-    console.log('[Worker] Functions registered: transcribe-sermon')
+    console.log('[Worker] Functions registered: transcribe-sermon, process-pdf-sermon')
   })
 }
 
