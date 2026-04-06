@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { authenticatedFetch } from '@/lib/api-client'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { CachedRecommendedSermon } from '@/inngest/functions/refresh-recommended-sermons'
 
 type Props = {
@@ -15,12 +16,32 @@ async function fetchRecommended(): Promise<CachedRecommendedSermon[]> {
   return json.sermons
 }
 
+function RecommendedSermonsSkeleton() {
+  return (
+    <div className="w-full max-w-3xl mx-auto mt-12">
+      <Skeleton className="h-4 w-40 mb-4" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i}>
+            <Skeleton className="aspect-video rounded-lg mb-2" />
+            <div className="min-h-[3.5rem]">
+              <Skeleton className="h-4 w-full mb-1" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function RecommendedSermons({ onSelect }: Props) {
-  const { data: sermons } = useQuery({
+  const { data: sermons, isLoading } = useQuery({
     queryKey: ['sermons', 'recommended'],
     queryFn: fetchRecommended,
   })
 
+  if (isLoading) return <RecommendedSermonsSkeleton />
   if (!sermons?.length) return null
 
   return (

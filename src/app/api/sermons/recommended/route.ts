@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/api-auth'
 import { supabaseServer } from '@/lib/supabase.server'
+import { getVideoDetails } from '@/lib/youtube'
 import type { CachedRecommendedSermon } from '@/inngest/functions/refresh-recommended-sermons'
 
 export async function GET(request: NextRequest) {
@@ -29,7 +30,20 @@ export async function GET(request: NextRequest) {
     .not('youtube_id', 'is', null)
 
   const ownedIds = new Set((owned ?? []).map((r) => r.youtube_id))
-  const sermons = allSermons.filter((s) => !ownedIds.has(s.youtube_id))
+  const remaining = allSermons.filter((s) => !ownedIds.has(s.youtube_id))
+
+  // Filter out private/deleted videos — the Videos API won't return them
+  const ids = remaining.map((s) => s.youtube_id)
+  let availableIds: Set<string>
+  try {
+    const details = await getVideoDetails(ids)
+    availableIds = new Set(details.keys())
+  } catch {
+    // If the API call fails, return all — don't break the feature
+    availableIds = new Set(ids)
+  }
+
+  const sermons = remaining.filter((s) => availableIds.has(s.youtube_id)).slice(0, 8)
 
   return NextResponse.json({ sermons })
 }

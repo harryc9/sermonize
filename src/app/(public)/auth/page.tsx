@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/context/auth-provider'
 import { sbc } from '@/lib/supabase.client'
-import { Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 
@@ -40,8 +41,19 @@ export default function AuthPage() {
 
     try {
       if (mode === 'signup') {
-        const { error } = await sbc.auth.signUp({ email, password })
+        const { data, error } = await sbc.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
         if (error) throw error
+        // If email confirmation is required, session will be null
+        if (!data.session) {
+          router.push('/auth/verify-email')
+          return
+        }
       } else {
         const { error } = await sbc.auth.signInWithPassword({ email, password })
         if (error) throw error
@@ -69,11 +81,21 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-[#fafafa] px-6">
+      <Link
+        href="/"
+        className="absolute left-6 top-6 flex items-center gap-1.5 text-sm text-gray-400 transition-colors duration-150 hover:text-gray-600"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </Link>
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
-          <span className="font-serif text-2xl font-semibold tracking-tight text-gray-900">
+          <Link
+            href="/"
+            className="font-serif text-2xl font-semibold tracking-tight text-gray-900 hover:text-gray-700 transition-colors duration-150"
+          >
             Sermonize
-          </span>
+          </Link>
           <h2 className="font-serif text-xl font-semibold text-gray-900">
             {isSignUp ? 'Create your account' : 'Welcome back'}
           </h2>
