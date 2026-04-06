@@ -1,18 +1,15 @@
 /**
- * YouTube audio download via yt-dlp CLI.
- * Downloads audio as low-bitrate mono MP3, optionally trimmed to a time range.
+ * YouTube audio download via Apify + audio utilities.
  */
-import { execFile, spawn } from 'node:child_process'
-import { mkdtemp, stat, unlink } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { execFile } from 'node:child_process'
+import { downloadViaApify } from './apify'
 
-type DownloadResult = {
+export type DownloadResult = {
   filePath: string
   sizeBytes: number
 }
 
-function execAsync(cmd: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+export function execAsync(cmd: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     execFile(cmd, args, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) reject(new Error(`${cmd} failed: ${stderr || error.message}`))
@@ -22,123 +19,14 @@ function execAsync(cmd: string, args: string[]): Promise<{ stdout: string; stder
 }
 
 /**
- * Runs a command and streams stderr lines containing download progress to the console.
- * yt-dlp prints progress like "[download]  45.2% of 12.34MiB at 1.23MiB/s ETA 00:05".
- */
-function spawnWithProgress(cmd: string, args: string[], label: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] })
-    let stderr = ''
-
-    proc.stderr.on('data', (chunk: Buffer) => {
-      const text = chunk.toString()
-      stderr += text
-      for (const line of text.split('\n')) {
-        const trimmed = line.trim()
-        if (trimmed.startsWith('[download]') && trimmed.includes('%'))
-          console.log(`[audio:${label}] ${trimmed}`)
-        else if (trimmed.startsWith('[ExtractAudio]'))
-          console.log(`[audio:${label}] converting to mp3...`)
-      }
-    })
-
-    proc.on('close', (code) => {
-      if (code !== 0) reject(new Error(`${cmd} failed: ${stderr}`))
-      else resolve()
-    })
-
-    proc.on('error', (err) => reject(new Error(`${cmd} failed: ${err.message}`)))
-  })
-}
-
-function formatSecForYtdlp(sec: number): string {
-  const h = Math.floor(sec / 3600)
-  const m = Math.floor((sec % 3600) / 60)
-  const s = Math.floor(sec % 60)
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-}
-
-/**
  * Downloads audio from a YouTube video as a low-bitrate mono MP3.
- * When a range is specified, tries yt-dlp --download-sections (fast, only downloads
- * the needed bytes). Falls back to full download + ffmpeg trim for videos where
- * --download-sections fails (live stream recordings, DASH manifests).
  */
 export async function downloadAudio(
   youtubeId: string,
   startSec?: number,
   endSec?: number,
 ): Promise<DownloadResult> {
-  const tmpDir = await mkdtemp(join(tmpdir(), 'sermonize-'))
-  const outputTemplate = join(tmpDir, '%(id)s.%(ext)s')
-  const fullPath = join(tmpDir, `${youtubeId}.mp3`)
-  const url = `https://www.youtube.com/watch?v=${youtubeId}`
-
-  const baseArgs = [
-    '-x',
-    '--audio-format', 'mp3',
-    '--postprocessor-args', 'ffmpeg:-ac 1 -ab 48k',
-    '-o', outputTemplate,
-    '--no-playlist',
-    '--no-warnings',
-    '--newline',
-    '--concurrent-fragments', '5',
-    '--extractor-args', 'youtube:player_client=ios,web',
-  ]
-
-  if (startSec != null && endSec != null) {
-    const startStr = formatSecForYtdlp(startSec)
-    const endStr = formatSecForYtdlp(endSec)
-
-    try {
-      await spawnWithProgress('yt-dlp', [
-        ...baseArgs,
-        '--download-sections', `*${startStr}-${endStr}`,
-        '--force-keyframes-at-cuts',
-        url,
-      ], 'fast')
-      console.log('[audio] fast path: --download-sections succeeded')
-      const fileStats = await stat(fullPath)
-      return { filePath: fullPath, sizeBytes: fileStats.size }
-    } catch {
-      console.log('[audio] fast path failed, falling back to full download + trim')
-    }
-
-    await spawnWithProgress('yt-dlp', [...baseArgs, url], 'fallback')
-
-    const trimmedPath = join(tmpDir, `${youtubeId}.trimmed.mp3`)
-    const duration = endSec - startSec
-
-    await execAsync('ffmpeg', [
-      '-y', '-i', fullPath,
-      '-ss', startSec.toString(),
-      '-t', duration.toString(),
-      '-c', 'copy',
-      trimmedPath,
-    ])
-
-    await unlink(fullPath).catch(() => {})
-    const fileStats = await stat(trimmedPath)
-    return { filePath: trimmedPath, sizeBytes: fileStats.size }
-  }
-
-  await spawnWithProgress('yt-dlp', [...baseArgs, url], 'full')
-  const fileStats = await stat(fullPath)
-  return { filePath: fullPath, sizeBytes: fileStats.size }
-}
-
-/**
- * Fetches the title of a YouTube video via yt-dlp.
- */
-export async function getYouTubeTitle(youtubeId: string): Promise<string | null> {
-  try {
-    const url = `https://www.youtube.com/watch?v=${youtubeId}`
-    const { stdout } = await execAsync('yt-dlp', ['--print', 'title', '--no-playlist', '--no-warnings', url])
-    const title = stdout.trim()
-    return title || null
-  } catch {
-    return null
-  }
+  return await downloadViaApify(youtubeId, startSec, endSec)
 }
 
 /**

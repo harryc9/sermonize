@@ -7,7 +7,7 @@ const MAX_DURATION_MS = 2.5 * 60 * 60 * 1000 // 2 hours 30 minutes
 type VideoItem = {
   id: string
   contentDetails?: { duration: string }
-  snippet?: { defaultAudioLanguage?: string; defaultLanguage?: string }
+  snippet?: { title?: string; defaultAudioLanguage?: string; defaultLanguage?: string }
 }
 
 type VideosResponse = {
@@ -15,6 +15,7 @@ type VideosResponse = {
 }
 
 export type VideoDetails = {
+  title: string | null
   durationMs: number
   language: string | null
 }
@@ -46,7 +47,7 @@ export async function getVideoDetails(
     part: 'contentDetails,snippet',
     id: videoIds.join(','),
     fields:
-      'items(id,contentDetails/duration,snippet/defaultAudioLanguage,snippet/defaultLanguage)',
+      'items(id,contentDetails/duration,snippet/title,snippet/defaultAudioLanguage,snippet/defaultLanguage)',
     key: apiKey,
   })
 
@@ -71,7 +72,8 @@ export async function getVideoDetails(
       item.snippet?.defaultLanguage ??
       null
 
-    details.set(item.id, { durationMs, language })
+    const title = item.snippet?.title ?? null
+    details.set(item.id, { title, durationMs, language })
   }
 
   return details
@@ -104,6 +106,19 @@ export function isWithinDurationLimit(
   const effectiveMs =
     startMs != null && endMs != null ? endMs - startMs : durationMs
   return effectiveMs <= MAX_DURATION_MS
+}
+
+/**
+ * Fetch the title of a single YouTube video via the Data API.
+ */
+export async function getVideoTitle(videoId: string): Promise<string | null> {
+  try {
+    const details = await getVideoDetails([videoId])
+    const item = details.get(videoId)
+    return item?.title ?? null
+  } catch {
+    return null
+  }
 }
 
 export { MAX_DURATION_MS }

@@ -19,7 +19,7 @@ Typography-first, extreme minimalism. Every element must earn its place. Inspire
 - **Use semantic tokens only** — never hardcode `bg-orange-*` / `text-orange-*`:
   - `bg-primary` / `text-primary` / `text-primary-foreground`
   - `bg-primary/10` for tinted backgrounds, `hover:bg-primary/90` for hover, `border-primary/20` for subtle borders
-- **Neutral palette**: `gray-900` headings, `gray-400` secondary, `gray-200` borders, `gray-50` subtle fills
+- **Grayscale**: Always use `gray-*` — never `neutral-*`, `slate-*`, or `zinc-*`. `gray-900` headings, `gray-400` secondary, `gray-200` borders, `gray-50` subtle fills
 
 ## Typography
 
@@ -58,6 +58,7 @@ Typography-first, extreme minimalism. Every element must earn its place. Inspire
 ### Buttons
 - Primary CTA: `bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-8`
 - Secondary: `bg-gray-900 hover:bg-gray-800 text-white`
+- **Every button that triggers an async action MUST wire up `isLoading`** — track loading state and pass it to the Button. Users must always see immediate visual feedback (spinner) on click.
 - Use `isLoading` prop, never `disabled`
 - Icons inside `<Button>` need NO margin — button has `gap-2`
 - **Never use `asChild` on `<Button>` with multiple children** (icon + text) — Slot crashes. Wrap `<Button>` inside `<Link>` instead:

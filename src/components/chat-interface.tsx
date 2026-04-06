@@ -136,7 +136,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
               key={`${ts}-${match.index}`}
               type="button"
               onClick={() => onTimestampClick(seconds)}
-              className="inline-flex cursor-pointer items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+              className="inline-flex cursor-pointer items-center underline decoration-dotted decoration-gray-400 underline-offset-2 text-xs font-medium text-gray-600 transition-colors hover:decoration-gray-600"
             >
               {ts}
             </button>,
@@ -173,7 +173,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary/60"
+              className="text-gray-600 underline decoration-dotted decoration-gray-400 underline-offset-2 transition-colors hover:decoration-gray-600"
             >
               {verseRef}
             </a>,
@@ -240,7 +240,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
                         </code>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="border-l-2 border-primary/30 pl-3 italic">
+                        <blockquote className="border-l-2 border-gray-300 pl-3 italic">
                           {children}
                         </blockquote>
                       ),

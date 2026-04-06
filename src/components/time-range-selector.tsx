@@ -10,11 +10,12 @@ type TimeRangeSelectorProps = {
   youtubeId: string
   onConfirm: (startMs: number, endMs: number) => void
   onBack: () => void
+  isLoading?: boolean
 }
 
 const MIN_RANGE_MS = 30_000
 
-export function TimeRangeSelector({ youtubeId, onConfirm, onBack }: TimeRangeSelectorProps) {
+export function TimeRangeSelector({ youtubeId, onConfirm, onBack, isLoading }: TimeRangeSelectorProps) {
   const playerRef = useRef<YouTubePlayer | null>(null)
   const [durationMs, setDurationMs] = useState(0)
   const [startMs, setStartMs] = useState(0)
@@ -169,6 +170,7 @@ export function TimeRangeSelector({ youtubeId, onConfirm, onBack }: TimeRangeSel
             <Button
               onClick={() => onConfirm(startMs, endMs)}
               className="rounded-lg px-8"
+              isLoading={isLoading}
             >
               Start Chat
             </Button>

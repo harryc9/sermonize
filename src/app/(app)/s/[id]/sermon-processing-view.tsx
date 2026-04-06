@@ -133,7 +133,7 @@ export function SermonProcessingView({ sermon }: Props) {
                       className={cn(
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
                         isComplete && 'bg-gray-900 text-white',
-                        isActive && 'bg-primary text-primary-foreground',
+                        isActive && 'bg-gray-900 text-white',
                         !isComplete && !isActive && 'bg-gray-100 text-gray-300',
                       )}
                     >

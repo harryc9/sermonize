@@ -16,7 +16,7 @@ export default function AuthCallbackPage() {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="space-y-4 text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-400" />
           <p className="text-gray-400">Redirecting...</p>
         </div>
       </div>

@@ -5,7 +5,8 @@
  */
 import { inngest } from '@/inngest/client'
 import { supabaseServer } from '@/lib/supabase.server'
-import { downloadAudio, getYouTubeTitle } from '@/lib/audio'
+import { downloadAudio } from '@/lib/audio'
+import { getVideoTitle } from '@/lib/youtube'
 import { transcribeAudio } from '@/lib/whisper'
 import { formatTranscriptForPrompt } from '@/lib/transcript'
 import { generateSermonNotes } from '@/lib/generate-sermon-notes'
@@ -48,7 +49,7 @@ export const transcribeSermon = inngest.createFunction(
 
     const title = await step.run('fetch-title', async () => {
       try {
-        return await getYouTubeTitle(youtube_id)
+        return await getVideoTitle(youtube_id)
       } catch {
         return null
       }
