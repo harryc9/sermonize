@@ -29,7 +29,9 @@ export async function GET(request: NextRequest) {
     .not('youtube_id', 'is', null)
 
   const ownedIds = new Set((owned ?? []).map((r) => r.youtube_id))
-  const sermons = allSermons.filter((s) => !ownedIds.has(s.youtube_id))
+  const remaining = allSermons.filter((s) => !ownedIds.has(s.youtube_id))
+
+  const sermons = remaining.slice(0, 8)
 
   return NextResponse.json({ sermons })
 }

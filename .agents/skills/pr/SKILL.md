@@ -67,17 +67,18 @@ Your job is to commit any pending work, clean up the branch, sync with main, and
 
 ## Phase 2: Create or Update PR
 
-1. Determine the true base for this branch using this logic (run in order, stop at first result):
+1. **Determine the true base** — branches are often reused across multiple PRs, so you MUST find the correct base to avoid describing already-merged work:
 
    ```bash
-   # Step A: Check if main was merged back into the branch (common after squash-merge PRs)
-   LAST_MERGE_FROM_MAIN=$(git log --merges HEAD --format="%H %s" | grep -i "merge branch 'main'" | head -1 | awk '{print $1}')
+   # Check for prior merge-from-main commits (common after squash-merge PRs on the same branch)
+   LAST_MERGE_FROM_MAIN=$(git log --merges HEAD --format="%H %s" | grep -i "merge.*main" | head -1 | awk '{print $1}')
+   
+   # Also check the last commit that origin/main knows about on this branch
+   LAST_PUSHED_TO_MAIN=$(git log --oneline origin/main..HEAD | tail -1 | awk '{print $1}')
    
    if [ -n "$LAST_MERGE_FROM_MAIN" ]; then
-     # Use the merge-from-main commit as base — shows only work done after that merge
      BASE=$LAST_MERGE_FROM_MAIN
    else
-     # Fall back to standard merge-base
      BASE=$(git merge-base main HEAD)
    fi
    
@@ -85,10 +86,10 @@ Your job is to commit any pending work, clean up the branch, sync with main, and
    git diff ${BASE}..HEAD --stat
    ```
 
-   Use the output of these commands as the **sole source of truth** for the PR title and description. Ignore all other commits.
+   **The output of these commands is the SOLE source of truth for the PR title and description.** Do NOT use `git log main..HEAD` — that includes commits from prior PRs on the same branch. The summary and test plan must describe only the new changes.
 
-2. Review the actual diff of the new commits: `git show` each commit if needed to understand what changed.
-3. Derive the PR title from the branch name and the new commits only. Use conventional commit format (e.g., branch `feat/assessments2` becomes `feat: assessments v2`)
+2. Review the actual diff of the new commits: `git diff ${BASE}..HEAD` and `git show` each commit if needed.
+3. Derive the PR title from the branch name and the **new commits only** (since `$BASE`). Use conventional commit format (e.g., branch `feat/assessments2` becomes `feat: assessments v2`). Never include work from prior PRs on the same branch.
 4. Push the branch: `git push -u origin HEAD`
 5. **If a PR already existed** (found in Phase 0):
    - The push in step 4 updates it automatically.

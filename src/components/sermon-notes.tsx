@@ -128,12 +128,6 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
             </div>
           )}
 
-          {notes.prayer && (
-            <div className="mt-8">
-              <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Prayer</h4>
-              <p className="mt-3 text-[13px] italic leading-relaxed text-gray-500">{notes.prayer}</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

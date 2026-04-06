@@ -79,7 +79,7 @@ export const refreshRecommendedSermons = inngest.createFunction(
         const params = new URLSearchParams({
           part: 'snippet',
           playlistId: uploadsPlaylistId,
-          maxResults: '3',
+          maxResults: '5',
           key: apiKey,
         })
 
@@ -93,6 +93,10 @@ export const refreshRecommendedSermons = inngest.createFunction(
           if (!data.items?.length) return
 
           for (const item of data.items) {
+            // YouTube sets these titles for unavailable videos
+            const title = item.snippet.title
+            if (title === 'Private video' || title === 'Deleted video') continue
+
             candidates.push({
               videoId: item.snippet.resourceId.videoId,
               title: decodeHtmlEntities(item.snippet.title),
@@ -134,7 +138,7 @@ export const refreshRecommendedSermons = inngest.createFunction(
         DateTime.fromISO(a.publishedAt).toMillis(),
     )
 
-    const sermons: CachedRecommendedSermon[] = filtered.slice(0, 8).map((c) => ({
+    const sermons: CachedRecommendedSermon[] = filtered.slice(0, 16).map((c) => ({
       youtube_id: c.videoId,
       youtube_url: `https://www.youtube.com/watch?v=${c.videoId}`,
       title: c.title,

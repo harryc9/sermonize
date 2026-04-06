@@ -66,3 +66,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sonner toast: pin icon and action button to top */
+[data-sonner-toast][data-styled='true'] {
+  align-items: flex-start !important;
+}
+
+[data-sonner-toast][data-styled='true'] [data-icon] {
+  margin-top: 2px;
+}
+
+[data-sonner-toast][data-styled='true'] [data-button] {
+  margin-top: 2px;
+}
