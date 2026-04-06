@@ -43,37 +43,41 @@ export async function getVideoDetails(
   if (!apiKey) throw new Error('YOUTUBE_API_KEY is not set')
   if (videoIds.length === 0) return new Map()
 
-  const params = new URLSearchParams({
-    part: 'contentDetails,snippet',
-    id: videoIds.join(','),
-    fields:
-      'items(id,contentDetails/duration,snippet/title,snippet/defaultAudioLanguage,snippet/defaultLanguage)',
-    key: apiKey,
-  })
-
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?${params.toString()}`,
-  )
-
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`YouTube videos API error ${res.status}: ${body}`)
-  }
-
-  const data: VideosResponse = await res.json()
   const details = new Map<string, VideoDetails>()
 
-  for (const item of data.items) {
-    const durationMs = item.contentDetails?.duration
-      ? parseIsoDuration(item.contentDetails.duration)
-      : 0
-    const language =
-      item.snippet?.defaultAudioLanguage ??
-      item.snippet?.defaultLanguage ??
-      null
+  // YouTube API allows max 50 IDs per request
+  const BATCH_SIZE = 50
+  for (let i = 0; i < videoIds.length; i += BATCH_SIZE) {
+    const batch = videoIds.slice(i, i + BATCH_SIZE)
+    const params = new URLSearchParams({
+      part: 'contentDetails,snippet',
+      id: batch.join(','),
+      key: apiKey,
+    })
 
-    const title = item.snippet?.title ?? null
-    details.set(item.id, { title, durationMs, language })
+    const res = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?${params.toString()}`,
+    )
+
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`YouTube videos API error ${res.status}: ${body}`)
+    }
+
+    const data: VideosResponse = await res.json()
+
+    for (const item of data.items) {
+      const durationMs = item.contentDetails?.duration
+        ? parseIsoDuration(item.contentDetails.duration)
+        : 0
+      const language =
+        item.snippet?.defaultAudioLanguage ??
+        item.snippet?.defaultLanguage ??
+        null
+
+      const title = item.snippet?.title ?? null
+      details.set(item.id, { title, durationMs, language })
+    }
   }
 
   return details
