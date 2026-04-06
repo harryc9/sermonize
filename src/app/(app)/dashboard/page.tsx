@@ -19,11 +19,13 @@ type AppState =
 export default function DashboardPage() {
   const [state, setState] = useState<AppState>({ step: 'input' })
   const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const invalidateSermonList = useInvalidateSermonList()
 
   async function startTranscription(url: string, youtubeId: string, startMs?: number, endMs?: number) {
     setError(null)
+    setIsLoading(true)
 
     try {
       const res = await authenticatedFetch('/api/sermons', {
@@ -43,6 +45,8 @@ export default function DashboardPage() {
       router.push(`/s/${data.sermon.id}`)
     } catch {
       setError('Failed to connect. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -85,6 +89,7 @@ export default function DashboardPage() {
               startTranscription(state.url, state.youtubeId, startMs, endMs)
             }
             onBack={() => setState({ step: 'input' })}
+            isLoading={isLoading}
           />
           {error && (
             <p className="mt-4 text-sm text-destructive">{error}</p>

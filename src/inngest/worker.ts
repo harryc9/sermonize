@@ -2,8 +2,8 @@
  * Inngest Worker Server for Railway
  *
  * Express server for long-running Inngest functions that exceed Vercel's
- * timeout limits. Handles audio download (yt-dlp) + transcription (Whisper)
- * which require CLI binaries and can take several minutes.
+ * timeout limits. Handles audio download (Apify) + transcription (Whisper)
+ * which can take several minutes.
  *
  * Architecture:
  * - Inngest Cloud orchestrates all functions (scheduling, retries, state)

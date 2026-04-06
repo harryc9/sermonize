@@ -84,7 +84,7 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
                   <button
                     type="button"
                     onClick={() => onTimestampClick(Math.max(0, h.offset - 10))}
-                    className="mt-0.5 shrink-0 cursor-pointer rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium tabular-nums text-primary transition-colors hover:bg-primary/20"
+                    className="mt-0.5 shrink-0 cursor-pointer text-xs font-medium tabular-nums text-gray-500 underline decoration-dotted decoration-gray-400 underline-offset-2 transition-colors hover:decoration-gray-600"
                   >
                     {h.timestamp.replace(/[[\]]/g, '')}
                   </button>
@@ -104,7 +104,7 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
                     href={buildVerseUrl(verse)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-900"
+                    className="inline-flex items-center gap-1 text-xs text-gray-600 underline decoration-dotted decoration-gray-400 underline-offset-2 transition-colors hover:decoration-gray-600 hover:text-gray-900"
                   >
                     <BookOpen size={10} />
                     {verse}
