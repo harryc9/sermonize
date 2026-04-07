@@ -12,6 +12,7 @@ import { supabaseServer } from '@/lib/supabase.server'
 import { inngest } from '@/inngest/client'
 import { getDownloadUrl } from '@/lib/r2'
 import { getVideoDurations, isWithinDurationLimit } from '@/lib/youtube'
+import { hashPassages, refToDisplay, type ParsedRef } from '@/lib/bible/usfm'
 
 const STUCK_THRESHOLD_MINUTES = 5
 
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from('sermons')
-    .select('id, title, youtube_id, pdf_url, pdf_thumbnail_url, status, processing_step, created_at')
+    .select('id, title, youtube_id, pdf_url, pdf_thumbnail_url, source_type, status, processing_step, created_at')
     .eq('user_id', auth.userId)
     .is('hidden_at', null)
     .order('created_at', { ascending: false })
@@ -46,7 +47,14 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response
 
   try {
-    const { url, youtubeId, startMs, endMs } = await request.json()
+    const body = await request.json()
+
+    // Branch: passages mode (Bible study from predetermined passages)
+    if (body.source_type === 'passages') {
+      return handlePassagesCreate(auth.userId, body)
+    }
+
+    const { url, youtubeId, startMs, endMs } = body
 
     if (!url || !youtubeId)
       return NextResponse.json({ error: 'Missing URL or YouTube ID' }, { status: 400 })
@@ -67,6 +75,7 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('youtube_id', youtubeId)
       .eq('user_id', auth.userId)
+      .is('hidden_at', null)
 
     perUserQuery =
       startMs != null ? perUserQuery.eq('start_ms', startMs) : perUserQuery.is('start_ms', null)
@@ -211,4 +220,162 @@ export async function POST(request: NextRequest) {
     const message = err instanceof Error ? err.message : 'Failed to process video'
     return NextResponse.json({ error: message }, { status: 500 })
   }
+}
+
+type PassagesCreateBody = {
+  source_type: 'passages'
+  refs: ParsedRef[]
+  translation?: string
+  passages_input?: string
+}
+
+async function handlePassagesCreate(userId: string, body: PassagesCreateBody) {
+  const refs = body.refs ?? []
+  const translation = body.translation ?? 'BSB'
+
+  if (!Array.isArray(refs) || refs.length === 0) {
+    return NextResponse.json(
+      { error: 'No passages provided' },
+      { status: 400 },
+    )
+  }
+  if (refs.length > 25) {
+    return NextResponse.json(
+      { error: 'Too many passages (max 25 per study)' },
+      { status: 400 },
+    )
+  }
+
+  const passagesPayload = { translation, refs }
+  const passagesHash = hashPassages(refs, translation)
+
+  // Per-user dedup
+  const { data: existing } = await supabaseServer
+    .from('sermons')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('source_type', 'passages')
+    .eq('passages_hash', passagesHash)
+    .is('hidden_at', null)
+    .maybeSingle()
+
+  if (existing) {
+    const isStuck =
+      (existing.status === 'pending' || existing.status === 'processing') &&
+      DateTime.fromISO(existing.created_at).diffNow('minutes').minutes <
+        -STUCK_THRESHOLD_MINUTES
+
+    if (isStuck) {
+      await supabaseServer
+        .from('sermons')
+        .update({ status: 'pending', error: null })
+        .eq('id', existing.id)
+
+      try {
+        await inngest.send({
+          name: 'passages/generate-notes',
+          data: { sermon_id: existing.id },
+        })
+      } catch (sendErr) {
+        console.error('[sermons] Inngest send failed for stuck passages', sendErr)
+        await supabaseServer
+          .from('sermons')
+          .update({
+            status: 'error',
+            error: 'Failed to start processing. Please try again.',
+          })
+          .eq('id', existing.id)
+        return NextResponse.json(
+          { error: 'Failed to start processing. Please try again.' },
+          { status: 500 },
+        )
+      }
+      return NextResponse.json({ sermon: { ...existing, status: 'pending' } })
+    }
+    return NextResponse.json({ sermon: existing })
+  }
+
+  // Cross-user dedup: identical (translation, refs) already completed → copy
+  const { data: shared } = await supabaseServer
+    .from('sermons')
+    .select('title, transcript, notes, passages')
+    .eq('source_type', 'passages')
+    .eq('passages_hash', passagesHash)
+    .eq('status', 'completed')
+    .not('transcript', 'is', null)
+    .limit(1)
+    .maybeSingle()
+
+  if (shared) {
+    const { data: copied, error: copyError } = await supabaseServer
+      .from('sermons')
+      .insert({
+        user_id: userId,
+        source_type: 'passages',
+        title: shared.title ?? buildPassagesTitle(refs),
+        transcript: shared.transcript,
+        notes: shared.notes,
+        passages: shared.passages ?? passagesPayload,
+        passages_hash: passagesHash,
+        passages_input: body.passages_input ?? null,
+        status: 'completed',
+      })
+      .select()
+      .single()
+
+    if (copyError) {
+      console.error('[sermons] Failed to copy shared passages study', copyError)
+      return NextResponse.json({ error: copyError.message }, { status: 500 })
+    }
+    return NextResponse.json({ sermon: copied })
+  }
+
+  // Fresh insert
+  const { data: sermon, error } = await supabaseServer
+    .from('sermons')
+    .insert({
+      user_id: userId,
+      source_type: 'passages',
+      title: buildPassagesTitle(refs),
+      transcript: [],
+      passages: passagesPayload,
+      passages_hash: passagesHash,
+      passages_input: body.passages_input ?? null,
+      status: 'pending',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[sermons] DB insert error (passages)', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  try {
+    await inngest.send({
+      name: 'passages/generate-notes',
+      data: { sermon_id: sermon.id },
+    })
+  } catch (sendErr) {
+    console.error('[sermons] Inngest send failed for new passages', sendErr)
+    await supabaseServer
+      .from('sermons')
+      .update({
+        status: 'error',
+        error: 'Failed to start processing. Please try again.',
+      })
+      .eq('id', sermon.id)
+    return NextResponse.json(
+      { error: 'Failed to start processing. Please try again.' },
+      { status: 500 },
+    )
+  }
+
+  return NextResponse.json({ sermon })
+}
+
+function buildPassagesTitle(refs: ParsedRef[]): string {
+  if (refs.length === 0) return 'Bible Study'
+  if (refs.length <= 3) return refs.map(refToDisplay).join(', ')
+  return `${refToDisplay(refs[0])} +${refs.length - 1} more`
 }

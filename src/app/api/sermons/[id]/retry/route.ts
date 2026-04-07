@@ -18,7 +18,7 @@ export async function POST(
 
   const { data: sermon, error } = await supabaseServer
     .from('sermons')
-    .select('id, youtube_id, youtube_url, status, user_id')
+    .select('id, youtube_id, youtube_url, status, user_id, source_type')
     .eq('id', id)
     .eq('user_id', auth.userId)
     .single()
@@ -35,14 +35,21 @@ export async function POST(
     .eq('id', id)
 
   try {
-    await inngest.send({
-      name: 'sermon/transcribe',
-      data: {
-        sermon_id: sermon.id,
-        youtube_id: sermon.youtube_id,
-        youtube_url: sermon.youtube_url,
-      },
-    })
+    if (sermon.source_type === 'passages') {
+      await inngest.send({
+        name: 'passages/generate-notes',
+        data: { sermon_id: sermon.id },
+      })
+    } else {
+      await inngest.send({
+        name: 'sermon/transcribe',
+        data: {
+          sermon_id: sermon.id,
+          youtube_id: sermon.youtube_id,
+          youtube_url: sermon.youtube_url,
+        },
+      })
+    }
   } catch (sendErr) {
     console.error('[sermons/retry] Inngest send failed', sendErr)
     await supabaseServer

@@ -81,9 +81,9 @@ const BOOK_NAMES = [
 const sorted = [...BOOK_NAMES].sort((a, b) => b.length - a.length)
 const bookPattern = sorted.map((n) => n.replace(/\s/g, '\\s+').replace('.', '\\.')).join('|')
 
-// Matches: "Romans 12:1-2", "1 Cor. 15:42–44", "Ps 23:1", "Genesis 1:1" etc.
+// Matches: "Romans 12:1-2", "1 Cor. 15:42–44", "Ps 23:1", "Genesis 1:1", "Proverbs 20" etc.
 export const BIBLE_VERSE_RE = new RegExp(
-  `(?<![\\w/])(${bookPattern})\\.?\\s+(\\d{1,3}):(\\d{1,3})(?:\\s?[–-]\\s?(\\d{1,3}))?(?![\\w/])`,
+  `(?<![\\w/])(${bookPattern})\\.?\\s+(\\d{1,3})(?::(\\d{1,3})(?:\\s?[–-]\\s?(\\d{1,3}))?)?(?![\\w/:])`,
   'gi',
 )
 

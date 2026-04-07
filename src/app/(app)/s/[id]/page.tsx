@@ -7,6 +7,7 @@ import { supabaseServer } from '@/lib/supabase.server'
 import { downloadFromR2, getDownloadUrl, uploadToR2 } from '@/lib/r2'
 import { generatePdfThumbnail } from '@/lib/pdf'
 import type { SermonNotes } from '@/types/sermon-notes'
+import type { FetchedPassage } from '@/lib/bible/fetch-passages'
 import { notFound } from 'next/navigation'
 import { SermonChatClient } from './sermon-chat-client'
 import { SermonProcessingView } from './sermon-processing-view'
@@ -51,7 +52,7 @@ export default async function SermonPage({ params }: Props) {
 
   const sermonResult = await supabaseServer
     .from('sermons')
-    .select('id, title, youtube_id, source_type, pdf_url, pdf_thumbnail_url, user_id, status, processing_step, notes')
+    .select('id, title, youtube_id, source_type, pdf_url, pdf_thumbnail_url, user_id, status, processing_step, notes, transcript')
     .eq('id', id)
     .single()
 
@@ -90,12 +91,18 @@ export default async function SermonPage({ params }: Props) {
     }
   }
 
+  const passages =
+    sermon.source_type === 'passages'
+      ? ((sermon.transcript as unknown as FetchedPassage[]) ?? [])
+      : undefined
+
   return (
     <SermonChatClient
       sermon={sermon}
       initialMessages={messagesResult.data ?? []}
       notes={(sermon.notes as SermonNotes) ?? null}
       pdfSignedUrl={pdfSignedUrl}
+      passages={passages}
     />
   )
 }

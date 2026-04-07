@@ -7,6 +7,7 @@ import { convertToModelMessages, streamText } from 'ai'
 import { authenticateRequest } from '@/lib/api-auth'
 import { supabaseServer } from '@/lib/supabase.server'
 import { formatTranscriptForPrompt, formatPdfForPrompt } from '@/lib/transcript'
+import { formatPassagesForPrompt, type FetchedPassage } from '@/lib/bible/fetch-passages'
 import type { TranscriptSegment } from '@/types'
 import type { SermonNotes } from '@/types/sermon-notes'
 import { NextRequest } from 'next/server'
@@ -53,15 +54,24 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const segments = sermon.transcript as unknown as TranscriptSegment[]
+  const isPassages = sermon.source_type === 'passages'
   const isPdf = sermon.source_type === 'pdf'
-  const formattedTranscript = isPdf
-    ? formatPdfForPrompt(segments)
-    : formatTranscriptForPrompt(segments)
+
+  let formattedContent: string
+  if (isPassages) {
+    const passages = sermon.transcript as unknown as FetchedPassage[]
+    formattedContent = formatPassagesForPrompt(passages)
+  } else {
+    const segments = sermon.transcript as unknown as TranscriptSegment[]
+    formattedContent = isPdf
+      ? formatPdfForPrompt(segments)
+      : formatTranscriptForPrompt(segments)
+  }
 
   const notes = sermon.notes as unknown as SermonNotes | null
+  const notesLabel = isPassages ? 'STUDY NOTES' : 'SERMON NOTES'
   const notesBlock = notes
-    ? `\nSERMON NOTES (pre-generated summary, highlights, and verses):
+    ? `\n${notesLabel} (pre-generated summary, highlights, and verses):
 Summary: ${notes.summary}
 Key Highlights:
 ${notes.highlights.map((h) => `- [${h.timestamp}] ${h.text}`).join('\n')}
@@ -70,19 +80,44 @@ Bible Verses Referenced: ${notes.verses.length > 0 ? notes.verses.join(', ') : '
 
   const modelMessages = await convertToModelMessages(messages)
 
+  const sourceLabel = isPassages
+    ? 'set of Bible passages'
+    : isPdf
+      ? 'religious text'
+      : 'sermon'
+  const contentLabel = isPassages
+    ? 'passages'
+    : isPdf
+      ? 'document content'
+      : 'transcript'
+  const contentHeader = isPassages
+    ? 'PASSAGES'
+    : isPdf
+      ? 'DOCUMENT CONTENT'
+      : 'TRANSCRIPT'
+
+  const citationRule = isPassages
+    ? 'Cite verses using [Book Chapter:Verse] format exactly as they appear (e.g. [Romans 8:1]) — do NOT wrap in parentheses'
+    : isPdf
+      ? 'Cite page numbers exactly as they appear using [Page X] format — do NOT wrap in parentheses'
+      : 'Cite timestamps exactly as they appear in the transcript using [M:SS] or [H:MM:SS] format — do NOT wrap them in parentheses'
+
+  const groundingRule = isPassages
+    ? 'CRITICAL: Only quote verses that appear in the passages above. NEVER invent or paraphrase Bible text. If a user asks about a verse not in the loaded passages, say so clearly and offer to discuss what is loaded.'
+    : `If the user asks about something not covered in the ${isPdf ? 'document' : 'sermon'}, say so clearly`
+
   const result = streamText({
     model: openai('gpt-4o'),
-    system: `You are a pastoral study assistant. Answer questions about this ${isPdf ? 'religious text' : 'sermon'} using the ${isPdf ? 'document content' : 'transcript'} and notes below. Be precise, thoughtful, and pastoral in tone.
+    system: `You are a pastoral study assistant. Answer questions about this ${sourceLabel} using the ${contentLabel} and notes below. Be precise, thoughtful, and pastoral in tone.
 ${notesBlock}
-${isPdf ? 'DOCUMENT CONTENT' : 'TRANSCRIPT'}:
-${formattedTranscript}
+${contentHeader}:
+${formattedContent}
 
 Rules:
-- ${isPdf ? 'Cite page numbers exactly as they appear using [Page X] format — do NOT wrap in parentheses' : 'Cite timestamps exactly as they appear in the transcript using [M:SS] or [H:MM:SS] format — do NOT wrap them in parentheses'}
-- Quote exact words from the ${isPdf ? 'document' : 'transcript'} when the user asks for quotes — never paraphrase
-- Identify and cite Bible verse references (e.g., John 3:16) mentioned in the ${isPdf ? 'text' : 'sermon'}
-- If the user asks about something not covered in the ${isPdf ? 'document' : 'sermon'}, say so clearly
-- When summarizing, organize by the main points/themes of the ${isPdf ? 'text' : 'sermon'}
+- ${citationRule}
+- Quote exact words from the ${contentLabel} when the user asks for quotes — never paraphrase
+- ${groundingRule}
+- When summarizing, organize by the main themes of the ${isPassages ? 'passages' : isPdf ? 'text' : 'sermon'}
 - Use the notes as a reference for key themes, highlights, and verse citations
 - Keep responses focused and concise unless the user asks for detail`,
     messages: modelMessages,

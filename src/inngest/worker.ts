@@ -20,6 +20,7 @@ async function main() {
   const { transcribeSermon } = await import('./functions/transcribe-sermon')
   const { processPdfSermon } = await import('./functions/process-pdf-sermon')
   const { refreshRecommendedSermons } = await import('./functions/refresh-recommended-sermons')
+  const { generatePassageNotesFn } = await import('./functions/generate-passage-notes')
 
   const app = express()
   const port = process.env.PORT || 3001
@@ -49,7 +50,7 @@ async function main() {
     '/api/inngest',
     serve({
       client: inngest,
-      functions: [transcribeSermon, processPdfSermon, refreshRecommendedSermons],
+      functions: [transcribeSermon, processPdfSermon, refreshRecommendedSermons, generatePassageNotesFn],
     }),
   )
 
@@ -58,7 +59,7 @@ async function main() {
     console.log(`[Worker] Environment: ${process.env.NODE_ENV}`)
     console.log(`[Worker] Health check: http://localhost:${port}/health`)
     console.log(`[Worker] Inngest endpoint: http://localhost:${port}/api/inngest`)
-    console.log('[Worker] Functions registered: transcribe-sermon, process-pdf-sermon, refresh-recommended-sermons')
+    console.log('[Worker] Functions registered: transcribe-sermon, process-pdf-sermon, refresh-recommended-sermons, generate-passage-notes')
   })
 }
 
