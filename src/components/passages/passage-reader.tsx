@@ -37,21 +37,23 @@ export function PassageReader({
             <h2 className="font-serif text-3xl font-semibold text-gray-900">
               {p.display}
             </h2>
-            <div className="mt-6 font-serif text-lg leading-[1.8] text-gray-800">
+            <div className="mt-6 space-y-4 font-serif text-lg leading-[1.7] text-gray-800">
               {p.verses.map((v, vIdx) => {
                 const showChapterBreak = vIdx > 0 && v.verse === 1
                 return (
-                  <span key={`${v.chapter}-${v.verse}`}>
+                  <div key={`${v.chapter}-${v.verse}`}>
                     {showChapterBreak && (
-                      <span className="mr-1 align-baseline font-sans text-xs font-semibold uppercase tracking-widest text-gray-400">
-                        {v.chapter}
-                      </span>
+                      <div className="mb-3 mt-6 font-sans text-xs font-semibold uppercase tracking-widest text-gray-400">
+                        Chapter {v.chapter}
+                      </div>
                     )}
-                    <sup className="mr-0.5 select-none align-super font-sans text-[10px] font-medium text-gray-300">
-                      {v.verse}
-                    </sup>
-                    {v.text}{' '}
-                  </span>
+                    <p>
+                      <sup className="mr-1 select-none align-super font-sans text-[10px] font-medium text-gray-300">
+                        {v.verse}
+                      </sup>
+                      {v.text}
+                    </p>
+                  </div>
                 )
               })}
             </div>
@@ -125,12 +127,12 @@ function CompactPassageReader({ passages }: { passages: FetchedPassage[] }) {
             <h3 className="font-serif text-lg font-semibold text-gray-900">
               {p.display}
             </h3>
-            <div className="mt-2 text-sm leading-relaxed text-gray-700">
+            <div className="mt-2 space-y-2 text-sm leading-relaxed text-gray-700">
               {p.verses.map((v) => (
-                <span key={`${v.chapter}-${v.verse}`}>
+                <p key={`${v.chapter}-${v.verse}`}>
                   <sup className="mr-1 text-xs text-gray-400">{v.verse}</sup>
-                  {v.text}{' '}
-                </span>
+                  {v.text}
+                </p>
               ))}
             </div>
           </section>
