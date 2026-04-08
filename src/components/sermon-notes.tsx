@@ -48,10 +48,12 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
       if (!el) return
       updateScrollState(el)
       // Observe size changes (fonts loading, regeneration) so the fade
-      // stays accurate without useEffect.
+      // stays accurate without useEffect. React 19 callback refs support
+      // returning a cleanup function, invoked when the element unmounts.
       const ro = new ResizeObserver(() => updateScrollState(el))
       ro.observe(el)
       for (const child of Array.from(el.children)) ro.observe(child)
+      return () => ro.disconnect()
     },
     [updateScrollState],
   )

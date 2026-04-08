@@ -114,7 +114,7 @@ Bible Verses Referenced: ${notes.verses.length > 0 ? notes.verses.join(', ') : '
 
 Example of correct citation style:
 Q: What was Solomon known for?
-A: Solomon was renowned for his wisdom, granted by God (see 1 Kings 3:1–14), and for building the first temple in Jerusalem. His later years were marked by idolatry after his foreign wives turned his heart away from the LORD — 1 Kings 11:2–5.`
+A: Solomon was renowned for his wisdom, granted by God — see 1 Kings 3:1–14 — and for building the first temple in Jerusalem. His later years were marked by idolatry after his foreign wives turned his heart away from the LORD — 1 Kings 11:2–5.`
     : ''
 
   const result = streamText({
