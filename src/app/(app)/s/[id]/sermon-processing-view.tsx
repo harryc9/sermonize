@@ -6,7 +6,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Download, AudioLines, Save, FileText, Check, Loader2, AlertCircle, RotateCw, ScanText } from 'lucide-react'
+import { Download, AudioLines, Save, FileText, Check, Loader2, AlertCircle, RotateCw, ScanText, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { authenticatedFetch } from '@/lib/api-client'
 import { useInvalidateSermonList } from '@/components/sidebar'
@@ -43,6 +43,11 @@ const PDF_STEPS = [
   { key: 'generating_notes', label: 'Generating notes', icon: FileText },
 ] as const
 
+const PASSAGES_STEPS = [
+  { key: 'fetching_passages', label: 'Looking up verses', icon: BookOpen },
+  { key: 'generating_notes', label: 'Generating notes', icon: FileText },
+] as const
+
 
 export function SermonProcessingView({ sermon }: Props) {
   const router = useRouter()
@@ -74,12 +79,13 @@ export function SermonProcessingView({ sermon }: Props) {
   }
 
   const isPdf = sermon.source_type === 'pdf'
-  const steps = isPdf ? PDF_STEPS : YOUTUBE_STEPS
+  const isPassages = sermon.source_type === 'passages'
+  const steps = isPassages ? PASSAGES_STEPS : isPdf ? PDF_STEPS : YOUTUBE_STEPS
   const activeIndex = steps.findIndex((s) => s.key === currentStep)
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-12">
-      {!isPdf && sermon.youtube_id && (
+      {!isPdf && !isPassages && sermon.youtube_id && (
         <div className="w-full max-w-lg">
           <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 bg-black">
             <iframe
@@ -104,7 +110,7 @@ export function SermonProcessingView({ sermon }: Props) {
             <div className="flex items-center justify-center gap-2 text-destructive">
               <AlertCircle size={18} />
               <span className="text-sm font-medium">
-                {data?.error ?? (isPdf ? 'Processing failed' : 'Transcription failed')}
+                {data?.error ?? (isPdf || isPassages ? 'Processing failed' : 'Transcription failed')}
               </span>
             </div>
             <Button
@@ -161,7 +167,7 @@ export function SermonProcessingView({ sermon }: Props) {
             </div>
 
             <p className="text-center text-sm text-gray-400">
-              {isPdf ? 'This may take a moment.' : 'This may take a while for longer sermons.'}
+              {isPdf || isPassages ? 'This may take a moment.' : 'This may take a while for longer sermons.'}
               <br />
               Feel free to close this page — we&apos;ll notify you when it&apos;s ready.
             </p>

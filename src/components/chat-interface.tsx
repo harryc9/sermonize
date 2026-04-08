@@ -88,7 +88,11 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
     if (node && !hasMountScrolledRef.current) {
       hasMountScrolledRef.current = true
       requestAnimationFrame(() => {
-        node.scrollIntoView({ behavior: 'instant' })
+        // Direct scrollTop instead of scrollIntoView — scrollIntoView walks up
+        // scrollable ancestors and can cascade to scroll sibling panels (e.g. the
+        // notes panel) when the total layout exceeds the viewport.
+        const container = scrollContainerRef.current
+        if (container) container.scrollTop = container.scrollHeight
       })
     }
   }, [])
@@ -103,7 +107,8 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
   ) {
     prevScrollTriggerRef.current = { count: messages.length, textLen: lastMessageText.length }
     queueMicrotask(() => {
-      bottomElRef.current?.scrollIntoView({ behavior: 'smooth' })
+      const container = scrollContainerRef.current
+      if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
     })
   }
 
@@ -199,7 +204,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center border-b px-4 py-3">
+      <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <h2 className="truncate pl-10 text-sm font-medium md:pl-0">
           {sermonTitle || 'Sermon Chat'}
         </h2>
@@ -279,7 +284,8 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
               setInput(e.target.value)
               e.target.style.height = 'auto'
               e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`
-              bottomElRef.current?.scrollIntoView({ behavior: 'smooth' })
+              const container = scrollContainerRef.current
+              if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {

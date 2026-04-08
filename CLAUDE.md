@@ -95,7 +95,9 @@ The doc should cover: what problem it solves, proposed approach, files/component
 
 ## Browser Automation
 
-Use the `chrome-devtools` CLI (not MCP tools) for all browser interaction:
+**NEVER use browser tools (chrome-devtools CLI, chrome MCP, any browser automation) unless the user explicitly asks.** Work from screenshots, descriptions, and source code. If visual evidence is ambiguous, ask the user — do not spin up a browser to investigate.
+
+When the user *does* ask, use the `chrome-devtools` CLI (not MCP tools):
 
 ```bash
 chrome-devtools navigate_page --url "http://localhost:4004/"

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      bible_verses: {
+        Row: {
+          book: string
+          chapter: number
+          text: string
+          translation: string
+          verse: number
+        }
+        Insert: {
+          book: string
+          chapter: number
+          text: string
+          translation: string
+          verse: number
+        }
+        Update: {
+          book?: string
+          chapter?: number
+          text?: string
+          translation?: string
+          verse?: number
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -75,6 +99,9 @@ export type Database = {
           hidden_at: string | null
           id: string
           notes: Json | null
+          passages: Json | null
+          passages_hash: string | null
+          passages_input: string | null
           pdf_filename: string | null
           pdf_thumbnail_url: string | null
           pdf_url: string | null
@@ -95,6 +122,9 @@ export type Database = {
           hidden_at?: string | null
           id?: string
           notes?: Json | null
+          passages?: Json | null
+          passages_hash?: string | null
+          passages_input?: string | null
           pdf_filename?: string | null
           pdf_thumbnail_url?: string | null
           pdf_url?: string | null
@@ -115,6 +145,9 @@ export type Database = {
           hidden_at?: string | null
           id?: string
           notes?: Json | null
+          passages?: Json | null
+          passages_hash?: string | null
+          passages_input?: string | null
           pdf_filename?: string | null
           pdf_thumbnail_url?: string | null
           pdf_url?: string | null

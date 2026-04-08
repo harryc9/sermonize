@@ -7,7 +7,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DateTime } from 'luxon'
-import { Plus, Menu, X, LogOut, Loader2, RotateCw, FileText, Trash2 } from 'lucide-react'
+import { Plus, Menu, X, LogOut, Loader2, RotateCw, FileText, BookOpen, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -23,6 +23,7 @@ type SermonListItem = {
   pdf_url: string | null
   pdf_thumbnail_url: string | null
   thumbnail_url?: string
+  source_type: string
   status: string
   processing_step: string | null
   created_at: string
@@ -268,7 +269,11 @@ export function Sidebar() {
                             isTranscribing && 'opacity-40',
                           )}
                         >
-                          <FileText size={14} className="text-gray-400" />
+                          {sermon.source_type === 'passages' ? (
+                            <BookOpen size={14} className="text-gray-400" />
+                          ) : (
+                            <FileText size={14} className="text-gray-400" />
+                          )}
                         </div>
                       )}
                       {isTranscribing && (

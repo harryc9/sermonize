@@ -10,20 +10,48 @@ import { buildVerseUrl } from '@/lib/bible-utils'
 import type { SermonNotes as SermonNotesType } from '@/types/sermon-notes'
 import { BookOpen, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 
 type PanelProps = {
   sermonId: string
   notes: SermonNotesType
   onTimestampClick: (seconds: number) => void
-  onClose: () => void
+  onClose?: () => void
   player: ReactNode
   sourceType?: string
+  variant?: 'rail' | 'reader'
+  headerActions?: ReactNode
+  showDevTools?: boolean
 }
 
-export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, player, sourceType }: PanelProps) {
+export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, player, sourceType, variant = 'rail', headerActions, showDevTools = false }: PanelProps) {
+  const isReader = variant === 'reader'
   const [isRegenerating, setIsRegenerating] = useState(false)
   const router = useRouter()
+  const isPassages = sourceType === 'passages'
+
+  // Resizable passage reader (passages mode only). Drag the divider to adjust.
+  const [readerHeight, setReaderHeight] = useState(400)
+  const dragStateRef = useRef<{ startY: number; startHeight: number } | null>(null)
+
+  const handleResizeStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    dragStateRef.current = { startY: e.clientY, startHeight: readerHeight }
+    const onMove = (ev: PointerEvent) => {
+      const state = dragStateRef.current
+      if (!state) return
+      const delta = ev.clientY - state.startY
+      const next = Math.max(120, Math.min(window.innerHeight - 200, state.startHeight + delta))
+      setReaderHeight(next)
+    }
+    const onUp = () => {
+      dragStateRef.current = null
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }, [readerHeight])
 
   async function handleRegenerate() {
     setIsRegenerating(true)
@@ -39,43 +67,70 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Collapse tab — mirrors the expand tab on the chat side */}
-      <button
-        type="button"
-        onClick={onClose}
-        title="Close notes"
-        className="absolute left-0 top-1/2 z-10 hidden -translate-x-full -translate-y-1/2 items-center gap-1 rounded-l-lg border border-r-0 border-border bg-background px-1.5 py-3 text-gray-400 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 md:flex"
-      >
-        <ChevronRight size={14} />
-      </button>
+      {/* Collapse tab — mirrors the expand tab on the chat side. Only shown in rail mode. */}
+      {!isReader && onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          title="Close notes"
+          className="absolute left-0 top-1/2 z-10 hidden -translate-x-full -translate-y-1/2 items-center gap-1 rounded-l-lg border border-r-0 border-border bg-background px-1.5 py-3 text-gray-400 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 md:flex"
+        >
+          <ChevronRight size={14} />
+        </button>
+      )}
 
       <div className="flex items-center justify-between border-b px-4 py-3">
         <h3 className="font-serif text-sm font-semibold">
           {sourceType === 'pdf' ? 'Document Notes' : 'Sermon Notes'}
         </h3>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={handleRegenerate}
-            disabled={isRegenerating}
-            title="Regenerate notes"
-            className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
-          >
-            {isRegenerating ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <RefreshCw size={14} />
-            )}
-          </button>
+          {headerActions}
+          {showDevTools && (
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
+              title="Regenerate notes (dev only)"
+              className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+            >
+              {isRegenerating ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="aspect-video w-full shrink-0">{player}</div>
+      {isPassages ? (
+        <>
+          <div className="w-full shrink-0" style={{ height: readerHeight }}>
+            {player}
+          </div>
+          <div
+            onPointerDown={handleResizeStart}
+            title="Drag to resize"
+            className="group relative h-1.5 w-full shrink-0 cursor-row-resize bg-border transition-colors hover:bg-gray-300"
+          >
+            <div className="absolute inset-x-0 -top-1 -bottom-1" />
+          </div>
+        </>
+      ) : isReader ? (
+        <div className="w-full shrink-0 px-8 pt-8">
+          <div className="mx-auto aspect-video max-w-2xl overflow-hidden rounded-xl bg-black">
+            {player}
+          </div>
+        </div>
+      ) : (
+        <div className="aspect-video w-full shrink-0">{player}</div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-5">
+        <div className={isReader ? 'mx-auto max-w-2xl px-8 py-8' : 'px-4 py-5'}>
           <p className="text-sm leading-relaxed text-gray-500">{notes.summary}</p>
 
+          {!isPassages && (
           <div className="mt-8">
             <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Key Highlights</h4>
             <ul className="mt-3 space-y-3">
@@ -93,8 +148,9 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
               ))}
             </ul>
           </div>
+          )}
 
-          {notes.verses.length > 0 && (
+          {!isPassages && notes.verses.length > 0 && (
             <div className="mt-8">
               <h4 className="border-b border-gray-100 pb-2 font-serif text-[11px] font-semibold uppercase tracking-widest text-gray-400">Verses Referenced</h4>
               <div className="mt-3 flex flex-wrap gap-1.5">
