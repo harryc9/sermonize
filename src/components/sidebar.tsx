@@ -170,14 +170,16 @@ export function Sidebar() {
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed left-3 top-3 z-50 md:hidden"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X size={20} /> : <Menu size={20} />}
-      </Button>
+      {!isOpen && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="fixed left-3 top-3 z-50 md:hidden"
+          onClick={() => setIsOpen(true)}
+        >
+          <Menu size={20} />
+        </Button>
+      )}
 
       {isOpen && (
         <div
@@ -192,8 +194,19 @@ export function Sidebar() {
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <span className="font-serif text-lg font-semibold">Sermonize</span>
+        <div className="flex items-center justify-between border-b px-2 py-3 md:px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsOpen(false)}
+            title="Close"
+          >
+            <X size={20} />
+          </Button>
+          <span className="hidden font-serif text-lg font-semibold md:inline">
+            Sermonize
+          </span>
           <Button
             variant="ghost"
             size="icon"
