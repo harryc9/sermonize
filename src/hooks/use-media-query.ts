@@ -1,19 +1,20 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
-
-function subscribe(query: string) {
-  return (onChange: () => void) => {
-    if (typeof window === 'undefined') return () => {}
-    const mql = window.matchMedia(query)
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  }
-}
+import { useMemo, useSyncExternalStore } from 'react'
 
 export function useMediaQuery(query: string): boolean {
+  const subscribe = useMemo(
+    () => (onChange: () => void) => {
+      if (typeof window === 'undefined') return () => {}
+      const mql = window.matchMedia(query)
+      mql.addEventListener('change', onChange)
+      return () => mql.removeEventListener('change', onChange)
+    },
+    [query],
+  )
+
   return useSyncExternalStore(
-    subscribe(query),
+    subscribe,
     () => window.matchMedia(query).matches,
     () => false,
   )
