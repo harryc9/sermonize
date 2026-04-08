@@ -7,6 +7,7 @@
 
 import { authenticatedFetch } from '@/lib/api-client'
 import { buildVerseUrl } from '@/lib/bible-utils'
+import { cn } from '@/lib/utils'
 import type { SermonNotes as SermonNotesType } from '@/types/sermon-notes'
 import { BookOpen, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -29,6 +30,38 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
   const [isRegenerating, setIsRegenerating] = useState(false)
   const router = useRouter()
   const isPassages = sourceType === 'passages'
+
+  // Scroll-affordance state: show a fade gradient at the bottom of the notes
+  // scroll container when there's more content below. Signals to users hovering
+  // the (non-scrollable) YouTube iframe that the panel itself scrolls.
+  const [hasOverflow, setHasOverflow] = useState(false)
+  const [isAtBottom, setIsAtBottom] = useState(false)
+
+  const updateScrollState = useCallback((el: HTMLDivElement) => {
+    const overflow = el.scrollHeight - el.clientHeight > 4
+    setHasOverflow(overflow)
+    setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 4)
+  }, [])
+
+  const scrollContainerRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      if (!el) return
+      updateScrollState(el)
+      // Observe size changes (fonts loading, regeneration) so the fade
+      // stays accurate without useEffect. React 19 callback refs support
+      // returning a cleanup function, invoked when the element unmounts.
+      const ro = new ResizeObserver(() => updateScrollState(el))
+      ro.observe(el)
+      for (const child of Array.from(el.children)) ro.observe(child)
+      return () => ro.disconnect()
+    },
+    [updateScrollState],
+  )
+
+  const handleScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => updateScrollState(e.currentTarget),
+    [updateScrollState],
+  )
 
   // Resizable passage reader (passages mode only). Drag the divider to adjust.
   const [readerHeight, setReaderHeight] = useState(400)
@@ -126,7 +159,12 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
         <div className="aspect-video w-full shrink-0">{player}</div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative min-h-0 flex-1">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="h-full overflow-y-auto"
+      >
         <div className={isReader ? 'mx-auto max-w-2xl px-8 py-8' : 'px-4 py-5'}>
           <p className="text-sm leading-relaxed text-gray-500">{notes.summary}</p>
 
@@ -185,6 +223,16 @@ export function SermonNotesPanel({ sermonId, notes, onTimestampClick, onClose, p
           )}
 
         </div>
+      </div>
+      {/* Bottom fade affordance: tells users the panel scrolls even when they
+          hover the YouTube iframe (which swallows wheel events). */}
+      <div
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent transition-opacity duration-200 ease-out',
+          hasOverflow && !isAtBottom ? 'opacity-100' : 'opacity-0',
+        )}
+      />
       </div>
     </div>
   )
