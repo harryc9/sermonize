@@ -65,12 +65,13 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
       {state.step === 'input' && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto px-6 py-12">
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-8 pt-16 sm:px-6 sm:py-12">
+          <div className="m-auto flex w-full flex-col items-center gap-6">
           <div className="text-center">
-            <h2 className="font-serif text-3xl font-semibold tracking-tight">
+            <h2 className="font-serif text-2xl font-semibold tracking-tight sm:text-3xl">
               Go deeper in your Bible study
             </h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground sm:text-base">
               {mode === 'youtube'
                 ? 'Paste any sermon, podcast, or teaching and start a Bible study.'
                 : 'Pick a set of passages and start a Bible study from Scripture itself.'}
@@ -127,11 +128,13 @@ export default function DashboardPage() {
               }
             />
           )}
+          </div>
         </div>
       )}
 
       {state.step === 'time_select' && (
-        <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-8 pt-16 sm:px-6 sm:py-12">
+          <div className="m-auto flex w-full flex-col items-center">
           <TimeRangeSelector
             youtubeId={state.youtubeId}
             onConfirm={(startMs, endMs) =>
@@ -141,17 +144,20 @@ export default function DashboardPage() {
             isLoading={isLoading}
           />
           {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+          </div>
         </div>
       )}
 
       {state.step === 'passages_confirm' && (
-        <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-8">
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-8 pt-16 sm:px-6 sm:py-12">
+          <div className="m-auto flex w-full flex-col items-center">
           <PassagesConfirm
             initialPassages={state.passages}
             rawInput={state.rawInput}
             onBack={() => setState({ step: 'input' })}
             onCreated={handlePassagesCreated}
           />
+          </div>
         </div>
       )}
     </div>

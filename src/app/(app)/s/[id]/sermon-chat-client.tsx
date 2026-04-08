@@ -17,6 +17,8 @@ import { YouTubePlayer, type YouTubePlayerHandle } from '@/components/youtube-pl
 import { PdfViewer } from '@/components/pdf-viewer'
 import { PassageReader } from '@/components/passages/passage-reader'
 import { useInvalidateSermonList } from '@/components/sidebar'
+import { useIsMobile } from '@/hooks/use-media-query'
+import { cn } from '@/lib/utils'
 import type { SermonNotes as SermonNotesType } from '@/types/sermon-notes'
 import type { FetchedPassage } from '@/lib/bible/fetch-passages'
 import type { UIMessage } from 'ai'
@@ -33,6 +35,8 @@ import {
   ChevronLeft,
   ArrowLeftRight,
 } from 'lucide-react'
+
+type MobileTab = 'main' | 'chat'
 
 type DbMessage = {
   id: string
@@ -106,6 +110,9 @@ export function SermonChatClient({ sermon, initialMessages, notes, pdfSignedUrl,
     gcTime: 0,
   })
 
+  const isMobile = useIsMobile()
+  const [mobileTab, setMobileTab] = useState<MobileTab>('main')
+
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(isPassages ? 'reader' : 'chat')
   const toggleLayout = useCallback(
     () => setLayoutMode((m) => (m === 'reader' ? 'chat' : 'reader')),
@@ -142,6 +149,95 @@ export function SermonChatClient({ sermon, initialMessages, notes, pdfSignedUrl,
   const floatingToggle = (
     <LayoutToggleButton mode={layoutMode} onToggle={toggleLayout} floating />
   )
+
+  // ───────────────────────── Mobile (tab-based) ─────────────────────────
+  if (isMobile) {
+    const mainLabel = isPassages ? 'Reader' : 'Notes'
+
+    const mainPanel =
+      isPassages && passages ? (
+        <PassageReader
+          passages={passages}
+          notes={notes}
+          onRegenerateNotes={handleRegenerateNotes}
+          isRegeneratingNotes={isRegeneratingNotes}
+          showDevTools={showDevTools}
+        />
+      ) : notes ? (
+        <SermonNotesPanel
+          sermonId={sermon.id}
+          notes={notes}
+          onTimestampClick={handleTimestampClick}
+          sourceType={sermon.source_type}
+          variant="reader"
+          showDevTools={showDevTools}
+          player={
+            isPdf && pdfSignedUrl ? (
+              <PdfViewer url={pdfSignedUrl} />
+            ) : sermon.youtube_id ? (
+              <YouTubePlayer ref={playerRef} youtubeId={sermon.youtube_id} />
+            ) : null
+          }
+        />
+      ) : (
+        <div className="h-full p-4">
+          {isPdf && pdfSignedUrl ? (
+            <PdfViewer url={pdfSignedUrl} />
+          ) : sermon.youtube_id ? (
+            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">
+              <YouTubePlayer ref={playerRef} youtubeId={sermon.youtube_id} />
+            </div>
+          ) : null}
+        </div>
+      )
+
+    return (
+      <div className="flex h-full flex-col">
+        <div className="flex shrink-0 items-center gap-1 border-b border-border bg-background pl-14 pr-2">
+          <button
+            type="button"
+            onClick={() => setMobileTab('main')}
+            className={cn(
+              'flex-1 border-b-2 px-4 py-3 text-sm font-medium transition-colors',
+              mobileTab === 'main'
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-400',
+            )}
+          >
+            {mainLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('chat')}
+            className={cn(
+              'flex-1 border-b-2 px-4 py-3 text-sm font-medium transition-colors',
+              mobileTab === 'chat'
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-400',
+            )}
+          >
+            Chat
+          </button>
+        </div>
+        <div className="relative min-h-0 flex-1">
+          <div className={cn('absolute inset-0', mobileTab === 'main' ? 'block' : 'hidden')}>
+            {mainPanel}
+          </div>
+          <div className={cn('absolute inset-0', mobileTab === 'chat' ? 'block' : 'hidden')}>
+            <ChatInterface
+              sermonId={sermon.id}
+              sermonTitle={sermon.title}
+              initialMessages={messages}
+              onTimestampClick={(seconds) => {
+                handleTimestampClick(seconds)
+                setMobileTab('main')
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ───────────────────────── Reader mode ─────────────────────────
   if (layoutMode === 'reader') {
