@@ -167,10 +167,24 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
         let match: RegExpExecArray | null
 
         while ((match = regex.exec(child)) !== null) {
-          if (match.index > lastIndex)
-            parts.push(child.slice(lastIndex, match.index))
-
           const verseRef = match[0]
+          // Absorb any enclosing [ ] and ( ) so the LLM emitting
+          // `[Romans 8:1]` or `([Romans 8:1])` doesn't leak brackets
+          // into the rendered output around the link.
+          let matchStart = match.index
+          let matchEnd = regex.lastIndex
+          if (child[matchStart - 1] === '[' && child[matchEnd] === ']') {
+            matchStart -= 1
+            matchEnd += 1
+          }
+          if (child[matchStart - 1] === '(' && child[matchEnd] === ')') {
+            matchStart -= 1
+            matchEnd += 1
+          }
+
+          if (matchStart > lastIndex)
+            parts.push(child.slice(lastIndex, matchStart))
+
           const url = buildVerseUrl(verseRef)
           parts.push(
             <a
@@ -183,7 +197,7 @@ export function ChatInterface({ sermonId, sermonTitle, initialMessages, onTimest
               {verseRef}
             </a>,
           )
-          lastIndex = regex.lastIndex
+          lastIndex = matchEnd
         }
 
         if (lastIndex === 0) return [child]

@@ -97,7 +97,10 @@ Bible Verses Referenced: ${notes.verses.length > 0 ? notes.verses.join(', ') : '
       : 'TRANSCRIPT'
 
   const citationRule = isPassages
-    ? 'Cite verses using [Book Chapter:Verse] format exactly as they appear (e.g. [Romans 8:1]) — do NOT wrap in parentheses'
+    ? `Cite Bible verses inline as PLAIN references with no wrapping punctuation — just "Book Chapter:Verse". The UI auto-links plain references.
+  Correct: Romans 8:1 — 1 Kings 3:1–14 — Proverbs 20:5
+  Incorrect: [Romans 8:1] — (Romans 8:1) — ([Romans 8:1]) — **Romans 8:1** — \`Romans 8:1\`
+  Never wrap verse references in square brackets, parentheses, bold, italics, or code fences — emit them as plain text only.`
     : isPdf
       ? 'Cite page numbers exactly as they appear using [Page X] format — do NOT wrap in parentheses'
       : 'Cite timestamps exactly as they appear in the transcript using [M:SS] or [H:MM:SS] format — do NOT wrap them in parentheses'
@@ -106,9 +109,22 @@ Bible Verses Referenced: ${notes.verses.length > 0 ? notes.verses.join(', ') : '
     ? 'CRITICAL: Only quote verses that appear in the passages above. NEVER invent or paraphrase Bible text. If a user asks about a verse not in the loaded passages, say so clearly and offer to discuss what is loaded.'
     : `If the user asks about something not covered in the ${isPdf ? 'document' : 'sermon'}, say so clearly`
 
+  const citationExample = isPassages
+    ? `
+
+Example of correct citation style:
+Q: What was Solomon known for?
+A: Solomon was renowned for his wisdom, granted by God (see 1 Kings 3:1–14), and for building the first temple in Jerusalem. His later years were marked by idolatry after his foreign wives turned his heart away from the LORD — 1 Kings 11:2–5.`
+    : ''
+
   const result = streamText({
     model: openai('gpt-4o'),
     system: `You are a pastoral study assistant. Answer questions about this ${sourceLabel} using the ${contentLabel} and notes below. Be precise, thoughtful, and pastoral in tone.
+
+SCOPE:
+You ONLY discuss this ${sourceLabel} and topics directly related to Christianity, the Bible, theology, church history, the Christian life, and pastoral application. If the user asks about anything outside that scope (coding, general tech, politics, unrelated trivia, homework, recipes, etc.), politely decline in ONE sentence and offer to return to the ${sourceLabel}. Do not answer the off-topic question, even partially. Do not hedge or apologize at length.
+
+Example refusal: "That's outside what I can help with here — I'm focused on this ${sourceLabel} and matters of faith. Want to dig into [suggest a theme or highlight from the notes] instead?"
 ${notesBlock}
 ${contentHeader}:
 ${formattedContent}
@@ -119,7 +135,7 @@ Rules:
 - ${groundingRule}
 - When summarizing, organize by the main themes of the ${isPassages ? 'passages' : isPdf ? 'text' : 'sermon'}
 - Use the notes as a reference for key themes, highlights, and verse citations
-- Keep responses focused and concise unless the user asks for detail`,
+- Keep responses focused and concise unless the user asks for detail${citationExample}`,
     messages: modelMessages,
     onFinish: async ({ text }) => {
       if (text) {

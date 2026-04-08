@@ -4,6 +4,7 @@
 
 Paste a YouTube URL → chat about the sermon. Users can ask about quotes, Bible verses, themes, and timestamps. The full transcript lives in the LLM context window (no RAG — a 60-min sermon is ~12K tokens).
 
+**Production domain:** `withsermonize.com`
 **Local dev:** `http://localhost:4004` (`bun run dev`)
 
 ---
